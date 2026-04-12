@@ -1,0 +1,103 @@
+import { createContext, useContext, useState, ReactNode } from 'react';
+
+export interface Patient {
+  id: string;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  gender: string;
+  phone: string;
+  email: string;
+  address: string;
+  assignedDoctor: string;
+  bloodType: string;
+  status: 'Active' | 'New' | 'Inactive';
+  lastVisit: string;
+  avatar: string;
+}
+
+interface PatientContextType {
+  patients: Patient[];
+  addPatient: (patient: Omit<Patient, 'id' | 'lastVisit' | 'avatar'>) => void;
+  updatePatient: (id: string, patient: Partial<Patient>) => void;
+  deletePatient: (id: string) => void;
+  totalPatients: number;
+  activePatients: number;
+}
+
+const PatientContext = createContext<PatientContextType | undefined>(undefined);
+
+export function PatientProvider({ children }: { children: ReactNode }) {
+  const [patients, setPatients] = useState<Patient[]>([
+    {
+      id: 'PT-001',
+      firstName: 'foulen',
+      lastName: 'ben foulen',
+      dob: '1985-05-15',
+      gender: 'Male',
+      phone: '123-456-7890',
+      email: 'foulen.ben@example.com',
+      address: '123 Main St, Tunis',
+      assignedDoctor: 'Dr. Foulen',
+      bloodType: 'A+',
+      status: 'Active',
+      lastVisit: '2024-04-10',
+      avatar: 'https://picsum.photos/seed/foulen1/100/100'
+    },
+    {
+      id: 'PT-002',
+      firstName: 'foulen',
+      lastName: 'ben foulen',
+      dob: '1992-08-22',
+      gender: 'Female',
+      phone: '098-765-4321',
+      email: 'foulen.ben2@example.com',
+      address: '456 Oak Ave, Sousse',
+      assignedDoctor: 'Dr. Foulen',
+      bloodType: 'O-',
+      status: 'New',
+      lastVisit: '2024-04-12',
+      avatar: 'https://picsum.photos/seed/foulen2/100/100'
+    }
+  ]);
+
+  const addPatient = (patient: Omit<Patient, 'id' | 'lastVisit' | 'avatar'>) => {
+    const newPatient: Patient = {
+      ...patient,
+      id: `PT-${(patients.length + 1).toString().padStart(3, '0')}`,
+      lastVisit: 'Never',
+      avatar: `https://picsum.photos/seed/${patient.firstName}/100/100`,
+      status: 'New'
+    };
+    setPatients(prev => [newPatient, ...prev]);
+  };
+
+  const updatePatient = (id: string, updatedFields: Partial<Patient>) => {
+    setPatients(prev => prev.map(p => p.id === id ? { ...p, ...updatedFields } : p));
+  };
+
+  const deletePatient = (id: string) => {
+    setPatients(prev => prev.filter(p => p.id !== id));
+  };
+
+  return (
+    <PatientContext.Provider value={{ 
+      patients, 
+      addPatient, 
+      updatePatient, 
+      deletePatient,
+      totalPatients: patients.length,
+      activePatients: patients.filter(p => p.status === 'Active').length
+    }}>
+      {children}
+    </PatientContext.Provider>
+  );
+}
+
+export function usePatients() {
+  const context = useContext(PatientContext);
+  if (context === undefined) {
+    throw new Error('usePatients must be used within a PatientProvider');
+  }
+  return context;
+}

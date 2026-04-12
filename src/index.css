@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=DM+Sans:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Brand Colors */
+  --color-primary: #1A4747;
+  --color-primary-dark: #0D3D3D;
+  --color-accent: #C8E04A;
+  --color-teal-light: #3DD6D0;
+  --color-amber: #FFCF44;
+  --color-gold: #F5C518;
+
+  /* Surfaces */
+  --color-bg-soft: #F0F4F8;
+  --color-card-dark: #1A3A3A;
+  --color-border-subtle: #E8EDF2;
+
+  /* Text */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-muted: #9CA3AF;
+
+  /* Status */
+  --color-pending: #F59E0B;
+  --color-pending-bg: #FEF3C7;
+  --color-completed: #06B6D4;
+  --color-completed-bg: #CFFAFE;
+
+  /* Radius */
+  --radius-card: 16px;
+  --radius-btn: 10px;
+  --radius-pill: 999px;
+
+  /* Fonts */
+  --font-heading: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-ui: "DM Sans", sans-serif;
+
+  /* Shadows */
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 6px 24px rgba(0, 0, 0, 0.10);
+}
+
+@layer base {
+  body {
+    @apply font-body text-text-primary antialiased;
+    background: radial-gradient(ellipse at top left, #B2D8D8 0%, #F0F4F8 50%, #F4C4C4 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-card shadow-card border border-border-subtle p-5 transition-all duration-300 hover:shadow-card-hover;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white px-4 py-2 rounded-btn font-medium transition-all hover:brightness-110 active:scale-95;
+  }
+
+  .badge {
+    @apply px-3 py-1 rounded-pill text-xs font-semibold;
+  }
+}
