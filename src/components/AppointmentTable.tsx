@@ -23,7 +23,7 @@ export default function AppointmentTable() {
   return (
     <div className="bg-white rounded-[24px] shadow-card border border-border-subtle overflow-hidden flex flex-col">
       <div className="p-6 flex items-center justify-between border-b border-border-subtle">
-        <h3 className="text-xl font-bold text-text-primary">Recent Appointments</h3>
+        <h3 className="text-2xl font-bold text-text-primary">Recent Appointments</h3>
         <button className="p-2 hover:bg-bg-soft rounded-full transition-colors">
           <MoreVertical size={20} className="text-text-muted" />
         </button>
@@ -33,14 +33,14 @@ export default function AppointmentTable() {
         <table className="w-full text-left">
           <thead className="bg-[#F9FAFB] border-b border-border-subtle">
             <tr>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Patient</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Doctor</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Type</th>
+              <th className="px-6 py-4 table-header">Patient</th>
+              <th className="px-6 py-4 table-header">Doctor</th>
+              <th className="px-6 py-4 table-header">Type</th>
               {user?.role === 'DOCTOR' && (
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider text-center">Ordonnance</th>
+                <th className="px-6 py-4 table-header text-center">Ordonnance</th>
               )}
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
+              <th className="px-6 py-4 table-header">Status</th>
+              <th className="px-6 py-4 table-header text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
@@ -56,14 +56,25 @@ export default function AppointmentTable() {
                       />
                     </div>
                     <div>
-                      <span className="text-sm font-bold text-text-primary block">{apt.patientName}</span>
-                      <span className="text-[10px] text-text-muted font-bold">{apt.startTime}</span>
+                      <span className="text-base font-bold text-text-primary block">{apt.patientName}</span>
+                      <span className="text-xs text-text-muted font-bold tabular">{apt.startTime}</span>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm text-text-secondary font-medium">{apt.doctor}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-pill text-[10px] font-bold uppercase ${TYPE_COLORS[apt.type] || 'bg-gray-100'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-bg-soft overflow-hidden border border-border-subtle">
+                      <img 
+                        src={`https://picsum.photos/seed/doctor-${apt.doctor.toLowerCase().replace(/\s+/g, '-')}/40/40`} 
+                        alt={apt.doctor} 
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <span className="text-sm text-text-secondary font-medium">{apt.doctor}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="text-[13px] font-normal text-text-primary">
                     {apt.type}
                   </span>
                 </td>
@@ -79,13 +90,17 @@ export default function AppointmentTable() {
                   </td>
                 )}
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-pill text-[10px] font-bold uppercase ${
-                    apt.status === 'Completed' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    {apt.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-1.5 h-1.5 rounded-full" 
+                      style={{ 
+                        backgroundColor: apt.status === 'Completed' ? '#1A6B5A' : '#2B7FBF' 
+                      }} 
+                    />
+                    <span className="text-[13px] font-normal text-text-primary">
+                      {apt.status}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

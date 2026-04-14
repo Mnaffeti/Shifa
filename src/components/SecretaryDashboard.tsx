@@ -47,7 +47,7 @@ export default function SecretaryDashboard() {
       {/* Main Content */}
       <div className="bg-white rounded-[24px] shadow-card border border-border-subtle overflow-hidden">
         <div className="p-6 border-b border-border-subtle flex items-center justify-between">
-          <h3 className="text-xl font-bold text-text-primary">Today's Appointment List</h3>
+          <h3 className="text-2xl font-bold text-text-primary">Today's Appointment List</h3>
           <button 
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 px-6 py-2.5 bg-[#C8E04A] text-primary font-bold rounded-pill shadow-md hover:brightness-105 transition-all active:scale-95"
@@ -61,12 +61,12 @@ export default function SecretaryDashboard() {
           <table className="w-full text-left">
             <thead className="bg-[#F9FAFB] border-b border-border-subtle">
               <tr>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Time</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Patient</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Doctor</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Type</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
+                <th className="px-6 py-4 table-header">Time</th>
+                <th className="px-6 py-4 table-header">Patient</th>
+                <th className="px-6 py-4 table-header">Doctor</th>
+                <th className="px-6 py-4 table-header">Type</th>
+                <th className="px-6 py-4 table-header">Status</th>
+                <th className="px-6 py-4 table-header text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
@@ -74,25 +74,50 @@ export default function SecretaryDashboard() {
                 todayAppointments.map((apt) => (
                   <tr key={apt.id} className="hover:bg-bg-soft/30 transition-colors group">
                     <td className="px-6 py-4">
-                      <span className="text-sm font-bold text-text-primary">{apt.startTime}</span>
+                      <span className="text-base font-bold text-text-primary tabular">{apt.startTime}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="text-sm font-bold text-text-primary">{apt.patientName}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-bg-soft overflow-hidden border border-border-subtle">
+                          <img 
+                            src={`https://picsum.photos/seed/patient-${apt.patientName.toLowerCase().replace(/\s+/g, '-')}/40/40`} 
+                            alt={apt.patientName} 
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <span className="text-base font-bold text-text-primary">{apt.patientName}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-text-secondary font-medium">{apt.doctor}</td>
                     <td className="px-6 py-4">
-                      <span className="px-3 py-1 rounded-pill bg-bg-soft text-text-secondary text-[10px] font-bold uppercase">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-bg-soft overflow-hidden border border-border-subtle">
+                          <img 
+                            src={`https://picsum.photos/seed/doctor-${apt.doctor.toLowerCase().replace(/\s+/g, '-')}/40/40`} 
+                            alt={apt.doctor} 
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                        <span className="text-sm text-text-secondary font-medium">{apt.doctor}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-[13px] font-normal text-text-primary">
                         {apt.type}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-pill text-[10px] font-bold uppercase ${
-                        apt.status === 'Confirmed' ? 'bg-green-100 text-green-700' :
-                        apt.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                        'bg-amber-100 text-amber-700'
-                      }`}>
-                        {apt.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-1.5 h-1.5 rounded-full" 
+                          style={{ 
+                            backgroundColor: apt.status === 'Confirmed' ? '#1A6B5A' : 
+                                             apt.status === 'Cancelled' ? '#9A9A9A' : '#2B7FBF' 
+                          }} 
+                        />
+                        <span className="text-[13px] font-normal text-text-primary">
+                          {apt.status}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

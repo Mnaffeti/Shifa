@@ -22,11 +22,11 @@ export default function StatCard({ icon: Icon, label, value, update, sparkline }
             <Icon size={20} />
           </div>
           <div>
-            <p className="text-xs font-medium text-text-secondary">{label}</p>
-            <h3 className="text-xl font-bold text-text-primary">{value}</h3>
+            <p className="text-lg font-medium text-text-secondary leading-snug">{label}</p>
+            <h3 className="text-xl font-bold text-text-primary tabular leading-tight">{value}</h3>
           </div>
         </div>
-        <span className="badge bg-[#F3F4F6] text-text-muted text-[11px] font-normal">
+        <span className="badge bg-[#F3F4F6] text-text-muted text-xs font-light tracking-wide">
           {update}
         </span>
       </div>

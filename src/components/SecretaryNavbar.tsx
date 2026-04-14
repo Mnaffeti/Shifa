@@ -27,19 +27,19 @@ export default function SecretaryNavbar({ currentView, onViewChange }: Secretary
             <div className="absolute inset-0 bg-[#1A9E9E] rotate-45 rounded-sm opacity-80" />
             <div className="absolute inset-0 bg-[#C8E04A] -rotate-12 rounded-sm opacity-80 translate-x-1" />
           </div>
-          <span className="font-heading font-bold text-2xl text-primary ml-2">Shifa</span>
+          <span className="font-heading font-bold text-2xl text-primary ml-2">ShifaPlus</span>
         </div>
 
         {/* Nav Items */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 bg-accent/20 backdrop-blur-md p-1 rounded-pill border border-accent/30 shadow-sm">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onViewChange(item.id)}
-              className={`px-4 py-2 rounded-pill text-sm font-bold transition-all flex items-center gap-2 ${
+              className={`px-5 py-2 rounded-pill text-base font-medium transition-all duration-300 flex items-center gap-2 ${
                 currentView === item.id 
-                  ? 'bg-primary text-white shadow-md' 
-                  : 'text-text-muted hover:text-primary hover:bg-primary/5'
+                  ? 'bg-accent text-primary shadow-md scale-105 backdrop-blur-sm' 
+                  : 'text-text-muted hover:text-primary hover:bg-white/40'
               }`}
             >
               <item.icon size={18} />
@@ -56,12 +56,12 @@ export default function SecretaryNavbar({ currentView, onViewChange }: Secretary
           <input 
             type="text" 
             placeholder="Search patients, doctors..." 
-            className="w-full pl-12 pr-4 py-2.5 bg-bg-soft rounded-pill text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+            className="w-full pl-12 pr-4 py-2.5 bg-white/30 backdrop-blur-md border border-white/40 rounded-pill text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium shadow-sm"
           />
         </div>
 
         {/* Notifications */}
-        <button className="p-2.5 bg-bg-soft rounded-full text-text-muted hover:text-primary transition-colors relative">
+        <button className="p-2.5 bg-white/30 backdrop-blur-md border border-white/40 rounded-full text-text-muted hover:text-primary transition-all shadow-sm relative">
           <Bell size={20} />
           <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
         </button>

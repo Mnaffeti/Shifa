@@ -25,7 +25,7 @@ const ACCOUNTS = [
     password: 'secretary123',
     name: 'Sophie Martin',
     role: 'SECRETARY' as UserRole,
-    avatar: 'https://picsum.photos/seed/sophie/100/100'
+    avatar: 'https://picsum.photos/seed/secretary-sophie/100/100'
   },
   {
     email: 'doctor@medica.com',
@@ -33,7 +33,7 @@ const ACCOUNTS = [
     name: 'Dr. Renata Moeloek',
     role: 'DOCTOR' as UserRole,
     specialty: 'Specialist',
-    avatar: 'https://picsum.photos/seed/foulen/100/100'
+    avatar: 'https://picsum.photos/seed/doctor-renata/100/100'
   }
 ];
 

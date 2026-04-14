@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=DM+Sans:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -16,9 +16,9 @@
   --color-border-subtle: #E8EDF2;
 
   /* Text */
-  --color-text-primary: #111827;
-  --color-text-secondary: #6B7280;
-  --color-text-muted: #9CA3AF;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #6B6B6B;
+  --color-text-muted: #6B6B6B;
 
   /* Status */
   --color-pending: #F59E0B;
@@ -32,9 +32,30 @@
   --radius-pill: 999px;
 
   /* Fonts */
-  --font-heading: "Plus Jakarta Sans", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-ui: "DM Sans", sans-serif;
+  --font-heading: "Inter", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-body: "Inter", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  /* Size Scale (Swiss Modular) */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 38px;
+
+  /* Line Heights */
+  --leading-tight: 1.4;
+  --leading-normal: 1.4;
+  --leading-relaxed: 1.4;
+  --leading-snug: 1.4;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.01em;
+  --tracking-widest: 0.08em;
 
   /* Shadows */
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
@@ -42,10 +63,25 @@
 }
 
 @layer base {
-  body {
-    @apply font-body text-text-primary antialiased;
+  html, body {
+    @apply antialiased;
     background: radial-gradient(ellipse at top left, #B2D8D8 0%, #F0F4F8 50%, #F4C4C4 100%);
     min-height: 100vh;
+  }
+
+  body {
+    @apply font-body text-text-primary font-medium leading-normal;
+    font-feature-settings: 'tnum';
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-medium tracking-tight leading-tight;
+  }
+
+  /* Tabular numbers for all stats and monetary values */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
   }
 }
 
@@ -55,10 +91,15 @@
   }
 
   .btn-primary {
-    @apply bg-primary text-white px-4 py-2 rounded-btn font-medium transition-all hover:brightness-110 active:scale-95;
+    @apply bg-primary text-white px-4 py-2 rounded-btn font-bold transition-all hover:brightness-110 active:scale-95;
   }
 
   .badge {
-    @apply px-3 py-1 rounded-pill text-xs font-semibold;
+    @apply px-3 py-1 rounded-pill text-xs font-medium;
+  }
+
+  /* Swiss Table Header Style */
+  .table-header {
+    @apply text-xs font-bold text-text-muted uppercase tracking-widest;
   }
 }

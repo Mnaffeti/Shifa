@@ -29,7 +29,7 @@ export default function PatientsPage() {
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-extrabold text-text-primary font-heading">Patients</h1>
+        <h1 className="text-3xl font-bold text-text-primary font-heading tracking-tight leading-tight">Patients</h1>
         <div className="flex items-center gap-4 flex-1 max-w-2xl mx-8">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
@@ -84,14 +84,14 @@ export default function PatientsPage() {
         <table className="w-full text-left">
           <thead className="bg-[#F9FAFB] border-b border-border-subtle">
             <tr>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Patient Name</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Patient ID</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Phone</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Age</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Last Visit</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Doctor</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
+              <th className="px-6 py-4 table-header">Patient Name</th>
+              <th className="px-6 py-4 table-header">Patient ID</th>
+              <th className="px-6 py-4 table-header">Phone</th>
+              <th className="px-6 py-4 table-header">Age</th>
+              <th className="px-6 py-4 table-header">Last Visit</th>
+              <th className="px-6 py-4 table-header">Doctor</th>
+              <th className="px-6 py-4 table-header">Status</th>
+              <th className="px-6 py-4 table-header text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
@@ -102,24 +102,29 @@ export default function PatientsPage() {
                     <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-border-subtle">
                       <img src={p.avatar} alt={p.firstName} referrerPolicy="no-referrer" />
                     </div>
-                    <span className="text-sm font-bold text-text-primary">{p.firstName} {p.lastName}</span>
+                    <span className="text-base font-bold text-text-primary">{p.firstName} {p.lastName}</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-sm font-bold text-primary">{p.id}</td>
+                <td className="px-6 py-4 text-base font-bold text-primary tabular">{p.id}</td>
                 <td className="px-6 py-4 text-sm text-text-secondary font-medium">{p.phone}</td>
-                <td className="px-6 py-4 text-sm text-text-secondary font-medium">
+                <td className="px-6 py-4 text-sm text-text-secondary font-medium tabular">
                   {new Date().getFullYear() - new Date(p.dob).getFullYear()} yrs
                 </td>
-                <td className="px-6 py-4 text-sm text-text-secondary font-medium">{p.lastVisit}</td>
+                <td className="px-6 py-4 text-sm text-text-secondary font-medium tabular">{p.lastVisit}</td>
                 <td className="px-6 py-4 text-sm text-text-secondary font-medium">{p.assignedDoctor}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-pill text-[10px] font-bold uppercase ${
-                    p.status === 'Active' ? 'bg-[#3DD6D0]/10 text-[#0D6B60]' :
-                    p.status === 'New' ? 'bg-green-100 text-green-700' :
-                    'bg-gray-100 text-gray-500'
-                  }`}>
-                    {p.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-1.5 h-1.5 rounded-full" 
+                      style={{ 
+                        backgroundColor: p.status === 'Active' ? '#1A6B5A' : 
+                                         p.status === 'New' ? '#2B7FBF' : '#9A9A9A' 
+                      }} 
+                    />
+                    <span className="text-[13px] font-normal text-text-primary">
+                      {p.status}
+                    </span>
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -454,11 +459,17 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
                           <p className="text-xs text-text-secondary font-medium">{apt.doctor} • {apt.startTime}</p>
                         </div>
                       </div>
-                      <span className={`px-3 py-1 rounded-pill text-[10px] font-bold uppercase ${
-                        apt.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {apt.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-1.5 h-1.5 rounded-full" 
+                          style={{ 
+                            backgroundColor: apt.status === 'Completed' ? '#1A6B5A' : '#2B7FBF' 
+                          }} 
+                        />
+                        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-primary">
+                          {apt.status}
+                        </span>
+                      </div>
                     </div>
                   ))
                 ) : (

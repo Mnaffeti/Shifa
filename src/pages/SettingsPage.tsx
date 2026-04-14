@@ -156,8 +156,16 @@ function WorkingHoursSettings() {
               <span className="text-text-muted">to</span>
               <input type="time" defaultValue="20:00" className="px-3 py-1.5 rounded-lg border border-border-subtle text-sm font-medium" />
             </div>
-            <div className={`px-3 py-1 rounded-pill text-[10px] font-bold uppercase ${day === 'Sunday' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-              {day === 'Sunday' ? 'Closed' : 'Open'}
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-1.5 h-1.5 rounded-full" 
+                style={{ 
+                  backgroundColor: day === 'Sunday' ? '#9A9A9A' : '#1A6B5A' 
+                }} 
+              />
+              <span className="text-[13px] font-normal text-text-primary">
+                {day === 'Sunday' ? 'Closed' : 'Open'}
+              </span>
             </div>
           </div>
         ))}

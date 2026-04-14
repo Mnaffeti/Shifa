@@ -50,7 +50,7 @@ function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-soft font-sans selection:bg-primary/10 selection:text-primary">
+    <div className="min-h-screen flex flex-col font-sans selection:bg-primary/10 selection:text-primary">
       {user?.role === 'DOCTOR' ? (
         <Navbar currentView={currentView} onViewChange={setCurrentView} />
       ) : (
@@ -74,7 +74,7 @@ function MainLayout() {
       <AppointmentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <footer className="py-8 px-8 text-center text-text-muted text-xs font-medium">
-        © 2024 Shifa Hospital Management System. All rights reserved.
+        © 2024 ShifaPlus Hospital Management System. All rights reserved.
       </footer>
     </div>
   );

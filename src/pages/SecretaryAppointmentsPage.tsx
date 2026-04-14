@@ -107,19 +107,23 @@ export default function SecretaryAppointmentsPage() {
                   </td>
                   <td className="px-6 py-4 text-sm text-text-secondary font-medium">{apt.doctor}</td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 rounded-pill bg-bg-soft text-text-secondary text-[10px] font-bold uppercase">
+                    <span className="text-[13px] font-normal text-text-primary">
                       {apt.type}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-pill text-[10px] font-bold uppercase ${
-                      apt.status === 'Confirmed' ? 'bg-green-100 text-green-700' :
-                      apt.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
-                      apt.status === 'Completed' ? 'bg-blue-100 text-blue-700' :
-                      'bg-amber-100 text-amber-700'
-                    }`}>
-                      {apt.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-1.5 h-1.5 rounded-full" 
+                        style={{ 
+                          backgroundColor: apt.status === 'Confirmed' || apt.status === 'Completed' ? '#1A6B5A' : 
+                                           apt.status === 'Cancelled' ? '#9A9A9A' : '#2B7FBF' 
+                        }} 
+                      />
+                      <span className="text-[13px] font-normal text-text-primary">
+                        {apt.status}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">

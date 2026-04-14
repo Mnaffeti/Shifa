@@ -31,33 +31,33 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<Patient[]>([
     {
       id: 'PT-001',
-      firstName: 'foulen',
-      lastName: 'ben foulen',
+      firstName: 'Ahmed',
+      lastName: 'Mansour',
       dob: '1985-05-15',
       gender: 'Male',
       phone: '123-456-7890',
-      email: 'foulen.ben@example.com',
+      email: 'ahmed.mansour@example.com',
       address: '123 Main St, Tunis',
-      assignedDoctor: 'Dr. Foulen',
+      assignedDoctor: 'Dr. Renata Moeloek',
       bloodType: 'A+',
       status: 'Active',
       lastVisit: '2024-04-10',
-      avatar: 'https://picsum.photos/seed/foulen1/100/100'
+      avatar: 'https://picsum.photos/seed/patient-ahmed/100/100'
     },
     {
       id: 'PT-002',
-      firstName: 'foulen',
-      lastName: 'ben foulen',
+      firstName: 'Sarah',
+      lastName: 'Ben Ammar',
       dob: '1992-08-22',
       gender: 'Female',
       phone: '098-765-4321',
-      email: 'foulen.ben2@example.com',
+      email: 'sarah.ben@example.com',
       address: '456 Oak Ave, Sousse',
-      assignedDoctor: 'Dr. Foulen',
+      assignedDoctor: 'Dr. Renata Moeloek',
       bloodType: 'O-',
       status: 'New',
       lastVisit: '2024-04-12',
-      avatar: 'https://picsum.photos/seed/foulen2/100/100'
+      avatar: 'https://picsum.photos/seed/patient-sarah/100/100'
     }
   ]);
 
@@ -66,7 +66,7 @@ export function PatientProvider({ children }: { children: ReactNode }) {
       ...patient,
       id: `PT-${(patients.length + 1).toString().padStart(3, '0')}`,
       lastVisit: 'Never',
-      avatar: `https://picsum.photos/seed/${patient.firstName}/100/100`,
+      avatar: `https://picsum.photos/seed/patient-${patient.firstName.toLowerCase()}-${patient.lastName.toLowerCase()}/100/100`,
       status: 'New'
     };
     setPatients(prev => [newPatient, ...prev]);

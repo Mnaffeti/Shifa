@@ -25,11 +25,11 @@ import { useAuth } from '../context/AuthContext';
 
 type CalendarView = 'Month' | 'Week' | 'Day';
 
-const TYPE_COLORS: Record<AppointmentType, string> = {
-  'Consultation': '#FFCF44',
-  'Follow-up': '#3DD6D0',
-  'Surgery': '#FF6B6B',
-  'Cancelled': '#E5E7EB'
+const TYPE_COLORS: Record<AppointmentType, { bg: string; text: string }> = {
+  'Consultation': { bg: '#E6FFFA', text: '#2C7A7B' }, // Teal
+  'Follow-up': { bg: '#EBF8FF', text: '#2B6CB0' },    // Blue
+  'Surgery': { bg: '#FEFCBF', text: '#975A16' },      // Amber
+  'Cancelled': { bg: '#FFF5F7', text: '#B83280' }     // Pink
 };
 
 export default function SchedulePage() {
@@ -84,39 +84,41 @@ export default function SchedulePage() {
   };
 
   return (
-    <div className="flex flex-col h-full gap-6">
+    <div className="flex flex-col h-full gap-6 font-sans">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-extrabold text-text-primary font-heading">Schedule</h1>
-          <div className="flex items-center gap-2 bg-white rounded-pill border border-border-subtle p-1 shadow-sm">
-            <button onClick={prev} className="p-1.5 hover:bg-bg-soft rounded-full transition-colors">
-              <ChevronLeft size={20} />
-            </button>
-            <span className="px-4 font-bold text-sm min-w-[140px] text-center">
+        <div className="flex items-center gap-6">
+          <h1 className="text-3xl font-medium text-text-primary tracking-tight">Schedule</h1>
+          <div className="flex items-center gap-4">
+            <h2 className="text-[16px] font-medium text-text-primary tracking-[-0.02em] min-w-[160px]">
               {view === 'Month' ? format(currentDate, 'MMMM yyyy') : 
                view === 'Week' ? `Week of ${format(startOfWeek(currentDate), 'MMM d')}` :
                format(currentDate, 'MMMM d, yyyy')}
-            </span>
-            <button onClick={next} className="p-1.5 hover:bg-bg-soft rounded-full transition-colors">
-              <ChevronRight size={20} />
-            </button>
+            </h2>
+            <div className="flex items-center gap-1">
+              <button onClick={prev} className="p-1 hover:bg-bg-soft rounded-md transition-colors text-text-muted">
+                <ChevronLeft size={20} />
+              </button>
+              <button 
+                onClick={() => setCurrentDate(new Date())}
+                className="px-3 py-1 bg-white border-[0.5px] border-border-subtle rounded-md text-[12px] font-normal tracking-[0.02em] hover:bg-bg-soft transition-colors"
+              >
+                Today
+              </button>
+              <button onClick={next} className="p-1 hover:bg-bg-soft rounded-md transition-colors text-text-muted">
+                <ChevronRight size={20} />
+              </button>
+            </div>
           </div>
-          <button 
-            onClick={() => setCurrentDate(new Date())}
-            className="px-4 py-2 bg-white border border-border-subtle rounded-pill text-sm font-bold hover:bg-bg-soft transition-colors"
-          >
-            Today
-          </button>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex bg-[#F3F4F6] p-1 rounded-pill border border-border-subtle">
+          <div className="flex bg-[#F3F4F6] p-1 rounded-pill border-[0.5px] border-border-subtle">
             {(['Month', 'Week', 'Day'] as CalendarView[]).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-4 py-1.5 rounded-pill text-sm font-bold transition-all ${
+                className={`px-4 py-1.5 rounded-pill text-[12px] font-normal tracking-[0.02em] transition-all ${
                   view === v ? 'bg-white text-primary shadow-sm' : 'text-text-secondary hover:text-primary'
                 }`}
               >
@@ -131,7 +133,7 @@ export default function SchedulePage() {
                 setInitialModalData({ date: format(currentDate, 'yyyy-MM-dd') });
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-2 bg-accent text-primary px-5 py-2.5 rounded-pill font-bold text-sm shadow-md hover:brightness-110 transition-all active:scale-95"
+              className="flex items-center gap-2 bg-accent text-primary px-5 py-2.5 rounded-pill font-medium text-[12px] tracking-[0.02em] shadow-md hover:brightness-110 transition-all active:scale-95"
             >
               <Plus size={18} />
               Add Appointment
@@ -141,7 +143,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Calendar Content */}
-      <div className="flex-1 bg-white rounded-[24px] shadow-card border border-border-subtle overflow-hidden flex flex-col">
+      <div className="flex-1 bg-white rounded-[24px] shadow-card border-[0.5px] border-border-subtle overflow-hidden flex flex-col">
         {view === 'Month' && (
           <MonthView 
             currentDate={currentDate} 
@@ -186,57 +188,88 @@ function MonthView({ currentDate, appointments, onDayClick, onAppointmentClick }
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+  // Group days into weeks for week numbers
+  const weeks = [];
+  for (let i = 0; i < days.length; i += 7) {
+    weeks.push(days.slice(i, i + 7));
+  }
+
   return (
     <div className="flex flex-col h-full">
-      <div className="grid grid-cols-7 border-b border-border-subtle bg-[#F9FAFB]">
-        {weekDays.map(day => (
-          <div key={day} className="py-3 text-center text-[11px] font-bold text-text-muted uppercase tracking-wider">
-            {day}
+      <div className="grid grid-cols-[40px_1fr] border-b-[0.5px] border-border-subtle">
+        <div className="bg-[#F9FAFB] border-r-[0.5px] border-border-subtle" />
+        <div className="grid grid-cols-7">
+          {weekDays.map((day, idx) => (
+            <div 
+              key={day} 
+              className={`py-3 text-center text-[10px] font-medium uppercase tracking-[0.08em] ${
+                idx === 0 || idx === 6 ? 'bg-[#FFF8F5] text-[#B83280]/60' : 'bg-white text-text-muted'
+              }`}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col">
+        {weeks.map((week, weekIdx) => (
+          <div key={weekIdx} className="flex-1 grid grid-cols-[40px_1fr] border-b-[0.5px] border-border-subtle last:border-b-0">
+            <div className="bg-[#F9FAFB] border-r-[0.5px] border-border-subtle flex items-start justify-center pt-4">
+              <span className="text-[10px] font-medium text-text-muted/50 tabular">
+                {format(week[0], 'w')}
+              </span>
+            </div>
+            <div className="grid grid-cols-7">
+              {week.map((day) => {
+                const dayAppointments = appointments.filter((a: Appointment) => isSameDay(new Date(a.date), day));
+                const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                const isCurrentMonth = isSameMonth(day, monthStart);
+                
+                return (
+                  <div 
+                    key={day.toString()} 
+                    className={`min-h-[120px] border-r-[0.5px] border-border-subtle last:border-r-0 pt-4 px-3 flex flex-col gap-1 transition-colors hover:bg-[#F5F5F5] cursor-pointer relative ${
+                      isWeekend ? 'bg-[#FFF8F5]' : 'bg-white'
+                    } ${!isCurrentMonth ? 'opacity-40' : ''}`}
+                    onClick={() => onDayClick(day)}
+                  >
+                    <div className="flex justify-start items-center mb-2">
+                      <span className={`text-[13px] ${
+                        isToday(day) ? 'w-7 h-7 bg-primary text-white rounded-full flex items-center justify-center font-semibold' : 
+                        isCurrentMonth ? 'text-text-primary font-normal' : 'text-text-muted font-normal'
+                      }`}>
+                        {format(day, 'd')}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1 overflow-hidden">
+                      {dayAppointments.slice(0, 3).map((apt: Appointment) => (
+                        <div 
+                          key={apt.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAppointmentClick(apt);
+                          }}
+                          className="px-2 py-1 rounded-[4px] text-[11px] font-medium tracking-[0.01em] truncate transition-all hover:brightness-95"
+                          style={{ 
+                            backgroundColor: TYPE_COLORS[apt.type].bg, 
+                            color: TYPE_COLORS[apt.type].text 
+                          }}
+                        >
+                          {apt.startTime} {apt.patientName}
+                        </div>
+                      ))}
+                      {dayAppointments.length > 3 && (
+                        <span className="text-[10px] font-medium text-text-muted pl-1">
+                          + {dayAppointments.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ))}
-      </div>
-      <div className="flex-1 grid grid-cols-7 auto-rows-fr">
-        {days.map(day => {
-          const dayAppointments = appointments.filter((a: Appointment) => isSameDay(new Date(a.date), day));
-          return (
-            <div 
-              key={day.toString()} 
-              className={`min-h-[120px] border-r border-b border-border-subtle p-2 flex flex-col gap-1 transition-colors hover:bg-bg-soft/30 cursor-pointer ${
-                !isSameMonth(day, monthStart) ? 'bg-[#F9FAFB]/50' : ''
-              }`}
-              onClick={() => onDayClick(day)}
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span className={`text-sm font-bold ${
-                  isToday(day) ? 'w-7 h-7 bg-primary text-white rounded-full flex items-center justify-center' : 
-                  isSameMonth(day, monthStart) ? 'text-text-primary' : 'text-text-muted'
-                }`}>
-                  {format(day, 'd')}
-                </span>
-              </div>
-              <div className="flex flex-col gap-1 overflow-hidden">
-                {dayAppointments.slice(0, 3).map((apt: Appointment) => (
-                  <div 
-                    key={apt.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onAppointmentClick(apt);
-                    }}
-                    className="px-2 py-1 rounded-md text-[10px] font-bold truncate transition-transform hover:scale-[1.02]"
-                    style={{ backgroundColor: TYPE_COLORS[apt.type], color: apt.type === 'Cancelled' ? '#6B7280' : '#1A4747' }}
-                  >
-                    {apt.startTime} {apt.patientName}
-                  </div>
-                ))}
-                {dayAppointments.length > 3 && (
-                  <span className="text-[10px] font-bold text-text-muted pl-1">
-                    + {dayAppointments.length - 3} more
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
       </div>
     </div>
   );
@@ -249,63 +282,89 @@ function WeekView({ currentDate, appointments, onAppointmentClick }: any) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="grid grid-cols-[80px_1fr] border-b border-border-subtle bg-[#F9FAFB]">
-        <div className="border-r border-border-subtle" />
+      <div className="grid grid-cols-[80px_1fr] border-b-[0.5px] border-border-subtle">
+        <div className="border-r-[0.5px] border-border-subtle bg-[#F9FAFB]" />
         <div className="grid grid-cols-7">
-          {days.map(day => (
-            <div key={day.toString()} className="py-3 text-center border-r border-border-subtle last:border-r-0">
-              <p className="text-[10px] font-bold text-text-muted uppercase mb-1">{format(day, 'EEE')}</p>
-              <p className={`text-lg font-bold ${isToday(day) ? 'text-primary' : 'text-text-primary'}`}>{format(day, 'd')}</p>
-            </div>
-          ))}
+          {days.map((day, idx) => {
+            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+            return (
+              <div 
+                key={day.toString()} 
+                className={`py-3 text-center border-r-[0.5px] border-border-subtle last:border-r-0 ${
+                  isWeekend ? 'bg-[#FFF8F5]' : 'bg-white'
+                }`}
+              >
+                <p className={`text-[10px] font-medium uppercase tracking-[0.08em] mb-1 ${
+                  isWeekend ? 'text-[#B83280]/60' : 'text-text-muted'
+                }`}>
+                  {format(day, 'EEE')}
+                </p>
+                <div className="flex justify-center">
+                  <p className={`text-[13px] ${
+                    isToday(day) ? 'w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-semibold' : 'text-text-primary font-normal'
+                  }`}>
+                    {format(day, 'd')}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
         <div className="grid grid-cols-[80px_1fr] relative">
           <div className="flex flex-col">
             {hours.map(hour => (
-              <div key={hour} className="h-20 border-b border-border-subtle border-r flex items-start justify-center pt-2">
-                <span className="text-[11px] font-bold text-text-muted uppercase">
+              <div key={hour} className="h-20 border-b-[0.5px] border-border-subtle border-r-[0.5px] flex items-start justify-center pt-2 bg-[#F9FAFB]">
+                <span className="text-[10px] font-medium text-text-muted uppercase tracking-[0.08em]">
                   {hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`}
                 </span>
               </div>
             ))}
           </div>
           <div className="grid grid-cols-7 relative">
-            {days.map(day => (
-              <div key={day.toString()} className="h-full border-r border-border-subtle last:border-r-0 relative">
-                {hours.map(hour => (
-                  <div key={hour} className="h-20 border-b border-border-subtle" />
-                ))}
-                {/* Appointments */}
-                {appointments
-                  .filter((a: Appointment) => isSameDay(new Date(a.date), day))
-                  .map((apt: Appointment) => {
-                    const [startH, startM] = apt.startTime.split(':').map(Number);
-                    const [endH, endM] = apt.endTime.split(':').map(Number);
-                    const top = (startH - 8) * 80 + (startM / 60) * 80;
-                    const height = ((endH * 60 + endM) - (startH * 60 + startM)) / 60 * 80;
-                    
-                    return (
-                      <div
-                        key={apt.id}
-                        onClick={() => onAppointmentClick(apt)}
-                        className="absolute left-1 right-1 rounded-lg p-2 shadow-sm border border-white/20 cursor-pointer overflow-hidden transition-all hover:brightness-105 z-10"
-                        style={{ 
-                          top: `${top}px`, 
-                          height: `${height}px`, 
-                          backgroundColor: TYPE_COLORS[apt.type],
-                          color: apt.type === 'Cancelled' ? '#6B7280' : '#1A4747'
-                        }}
-                      >
-                        <p className="text-[10px] font-extrabold uppercase mb-0.5">{apt.type}</p>
-                        <p className="text-xs font-bold truncate">{apt.patientName}</p>
-                        <p className="text-[10px] font-medium opacity-80">{apt.startTime} - {apt.endTime}</p>
-                      </div>
-                    );
-                  })}
-              </div>
-            ))}
+            {days.map((day, idx) => {
+              const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+              return (
+                <div 
+                  key={day.toString()} 
+                  className={`h-full border-r-[0.5px] border-border-subtle last:border-r-0 relative ${
+                    isWeekend ? 'bg-[#FFF8F5]' : 'bg-white'
+                  }`}
+                >
+                  {hours.map(hour => (
+                    <div key={hour} className="h-20 border-b-[0.5px] border-border-subtle" />
+                  ))}
+                  {/* Appointments */}
+                  {appointments
+                    .filter((a: Appointment) => isSameDay(new Date(a.date), day))
+                    .map((apt: Appointment) => {
+                      const [startH, startM] = apt.startTime.split(':').map(Number);
+                      const [endH, endM] = apt.endTime.split(':').map(Number);
+                      const top = (startH - 8) * 80 + (startM / 60) * 80;
+                      const height = ((endH * 60 + endM) - (startH * 60 + startM)) / 60 * 80;
+                      
+                      return (
+                        <div
+                          key={apt.id}
+                          onClick={() => onAppointmentClick(apt)}
+                          className="absolute left-1 right-1 rounded-[4px] p-2 shadow-sm border border-white/20 cursor-pointer overflow-hidden transition-all hover:brightness-95 z-10"
+                          style={{ 
+                            top: `${top}px`, 
+                            height: `${height}px`, 
+                            backgroundColor: TYPE_COLORS[apt.type].bg,
+                            color: TYPE_COLORS[apt.type].text
+                          }}
+                        >
+                          <p className="text-[10px] font-medium uppercase mb-0.5 opacity-70 tracking-[0.01em]">{apt.type}</p>
+                          <p className="text-[11px] font-medium tracking-[0.01em] truncate">{apt.patientName}</p>
+                          <p className="text-[10px] font-medium opacity-80">{apt.startTime} - {apt.endTime}</p>
+                        </div>
+                      );
+                    })}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -319,33 +378,33 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-6 border-b border-border-subtle bg-[#F9FAFB] flex items-center gap-4">
-        <div className="w-14 h-14 bg-primary rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
-          <span className="text-[10px] font-bold uppercase leading-none mb-1">{format(currentDate, 'MMM')}</span>
-          <span className="text-2xl font-black leading-none">{format(currentDate, 'd')}</span>
+      <div className="p-8 border-b-[0.5px] border-border-subtle bg-[#F9FAFB] flex items-center gap-6">
+        <div className="w-16 h-16 bg-primary rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
+          <span className="text-[10px] font-medium uppercase leading-none mb-1 tracking-[0.08em]">{format(currentDate, 'MMM')}</span>
+          <span className="text-3xl font-semibold leading-none">{format(currentDate, 'd')}</span>
         </div>
         <div>
-          <h2 className="text-xl font-bold text-text-primary">{format(currentDate, 'EEEE')}</h2>
-          <p className="text-sm font-medium text-text-secondary">You have {dayAppointments.length} appointments scheduled</p>
+          <h2 className="text-2xl font-medium text-text-primary tracking-tight">{format(currentDate, 'EEEE')}</h2>
+          <p className="text-sm font-normal text-text-secondary">You have {dayAppointments.length} appointments scheduled</p>
         </div>
       </div>
 
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-8">
         <div className="relative space-y-0">
           {hours.map(hour => {
             const timeStr = `${hour.toString().padStart(2, '0')}:00`;
             return (
               <div 
                 key={hour} 
-                className="group flex gap-6 h-24 border-b border-border-subtle last:border-b-0 cursor-pointer"
+                className="group flex gap-8 h-24 border-b-[0.5px] border-border-subtle last:border-b-0 cursor-pointer"
                 onClick={() => onSlotClick(timeStr)}
               >
-                <div className="w-16 pt-2 text-right">
-                  <span className="text-xs font-bold text-text-muted uppercase">
+                <div className="w-20 pt-2 text-right">
+                  <span className="text-[10px] font-medium text-text-muted uppercase tracking-[0.08em]">
                     {hour > 12 ? `${hour - 12} PM` : hour === 12 ? '12 PM' : `${hour} AM`}
                   </span>
                 </div>
-                <div className="flex-1 relative group-hover:bg-bg-soft/30 transition-colors rounded-xl">
+                <div className="flex-1 relative group-hover:bg-[#F5F5F5] transition-colors rounded-xl">
                   {/* Appointments for this hour */}
                   {dayAppointments
                     .filter((a: Appointment) => {
@@ -369,8 +428,8 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
                           style={{ 
                             top: `${top}px`, 
                             height: `${height}px`, 
-                            backgroundColor: TYPE_COLORS[apt.type],
-                            color: apt.type === 'Cancelled' ? '#6B7280' : '#1A4747'
+                            backgroundColor: TYPE_COLORS[apt.type].bg,
+                            color: TYPE_COLORS[apt.type].text
                           }}
                         >
                           <div className="flex items-center gap-4">
@@ -378,17 +437,22 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
                               <User size={20} />
                             </div>
                             <div>
-                              <p className="text-[10px] font-extrabold uppercase opacity-70 mb-0.5">{apt.type}</p>
-                              <p className="text-base font-bold">{apt.patientName}</p>
-                              <div className="flex items-center gap-2 text-[11px] font-bold">
+                              <p className="text-[10px] font-medium uppercase opacity-70 mb-0.5 tracking-[0.08em]">{apt.type}</p>
+                              <p className="text-[13px] font-medium">{apt.patientName}</p>
+                              <div className="flex items-center gap-2 text-[11px] font-medium">
                                 <Clock size={12} />
                                 {apt.startTime} - {apt.endTime}
                               </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${apt.status === 'Completed' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                            <span className="text-[10px] font-bold uppercase">{apt.status}</span>
+                            <div 
+                              className="w-1.5 h-1.5 rounded-full" 
+                              style={{ 
+                                backgroundColor: apt.status === 'Completed' ? '#1A6B5A' : '#2B7FBF' 
+                              }} 
+                            />
+                            <span className="text-[10px] font-medium uppercase tracking-[0.08em]">{apt.status}</span>
                           </div>
                         </div>
                       );

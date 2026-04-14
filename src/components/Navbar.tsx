@@ -33,19 +33,19 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
             <div className="absolute inset-0 bg-[#1A9E9E] rotate-45 rounded-sm opacity-80" />
             <div className="absolute inset-0 bg-[#C8E04A] -rotate-12 rounded-sm opacity-80 translate-x-1" />
           </div>
-          <span className="font-heading font-bold text-2xl text-primary ml-2">Shifa</span>
+          <span className="font-heading font-bold text-2xl text-primary ml-2">ShifaPlus</span>
         </div>
 
         {/* Nav Items */}
-        <div className="hidden md:flex items-center gap-1 bg-[#F3F4F6] p-1 rounded-pill">
+        <div className="hidden md:flex items-center gap-1 bg-accent/20 backdrop-blur-md p-1 rounded-pill border border-accent/30 shadow-sm">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onViewChange(item.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-5 py-2 rounded-pill text-base font-medium transition-all duration-300 ${
                 currentView === item.id
-                  ? 'bg-accent text-primary shadow-sm'
-                  : 'text-text-secondary hover:bg-white/50'
+                  ? 'bg-accent text-primary shadow-md scale-105'
+                  : 'text-text-secondary hover:bg-white/40 hover:text-primary'
               }`}
             >
               <item.icon size={18} />
@@ -56,10 +56,10 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
 
         {/* Right Icons */}
         <div className="flex items-center gap-4">
-          <button className="p-2 text-text-secondary hover:bg-bg-soft rounded-full transition-colors">
+          <button className="p-2.5 text-text-secondary bg-white/30 backdrop-blur-md border border-white/40 rounded-full hover:bg-white/50 hover:text-primary transition-all shadow-sm">
             <Search size={20} />
           </button>
-          <button className="p-2 text-text-secondary hover:bg-bg-soft rounded-full transition-colors relative">
+          <button className="p-2.5 text-text-secondary bg-white/30 backdrop-blur-md border border-white/40 rounded-full hover:bg-white/50 hover:text-primary transition-all shadow-sm relative">
             <Bell size={20} />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
           </button>

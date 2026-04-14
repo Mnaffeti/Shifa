@@ -33,7 +33,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-primary/5 via-white to-accent/5">
+    <div className="min-h-screen flex items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -51,19 +51,19 @@ export default function LoginPage() {
                 <div className="absolute inset-0 bg-[#1A9E9E] rotate-45 rounded-sm opacity-80" />
                 <div className="absolute inset-0 bg-[#C8E04A] -rotate-12 rounded-sm opacity-80 translate-x-1" />
               </div>
-              <span className="font-heading font-bold text-3xl text-primary ml-2">Shifa</span>
+              <span className="font-heading font-bold text-3xl text-primary ml-2">ShifaPlus</span>
             </div>
 
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-extrabold text-text-primary mb-2 font-heading">Welcome Back</h1>
-              <p className="text-text-secondary font-medium">Please select your role and sign in.</p>
+              <h1 className="text-3xl font-bold text-text-primary mb-2 font-heading tracking-tight leading-tight">Welcome Back</h1>
+              <p className="text-base font-medium text-text-secondary">Please select your role and sign in.</p>
             </div>
 
             {/* Role Selection */}
             <div className="flex p-1 bg-bg-soft rounded-2xl mb-8">
               <button
                 onClick={() => setCredentials('DOCTOR')}
-                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   selectedRole === 'DOCTOR' 
                     ? 'bg-white text-primary shadow-sm' 
                     : 'text-text-muted hover:text-text-primary'
@@ -73,7 +73,7 @@ export default function LoginPage() {
               </button>
               <button
                 onClick={() => setCredentials('SECRETARY')}
-                className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
+                className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   selectedRole === 'SECRETARY' 
                     ? 'bg-white text-primary shadow-sm' 
                     : 'text-text-muted hover:text-text-primary'
@@ -96,14 +96,14 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-[11px] font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Email Address</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium bg-bg-soft/30"
+                    className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
                     placeholder="doctor@shifa.com"
                     required
                   />
@@ -111,14 +111,14 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Password</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-12 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium bg-bg-soft/30"
+                    className="w-full pl-12 pr-12 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
                     placeholder="••••••••"
                     required
                   />
