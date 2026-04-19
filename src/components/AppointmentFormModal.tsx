@@ -18,7 +18,7 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
   const [formData, setFormData] = useState<Partial<Appointment>>({
     patientId: '',
     patientName: '',
-    doctor: 'Dr. Renata Moeloek',
+    doctor: 'Dr. Youssef',
     date: new Date().toISOString().split('T')[0],
     startTime: '09:00',
     endTime: '10:00',
@@ -75,7 +75,7 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
             className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-lg overflow-hidden"
           >
             <div className="p-6 border-b border-border-subtle flex items-center justify-between bg-primary text-white">
-              <h2 className="text-xl font-bold">{isEdit ? 'Edit Appointment' : 'New Appointment'}</h2>
+              <h2 className="text-xl font-bold">{isEdit ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}</h2>
               <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
                 <X size={20} />
               </button>
@@ -91,7 +91,7 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                     className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
                     required
                   >
-                    <option value="">Select Patient</option>
+                    <option value="">Sélectionner un patient</option>
                     {patients.map(p => (
                       <option key={p.id} value={p.id}>{p.firstName} {p.lastName} ({p.id})</option>
                     ))}
@@ -99,15 +99,14 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Doctor</label>
+                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Médecin</label>
                   <select
                     value={formData.doctor}
                     onChange={(e) => setFormData({ ...formData, doctor: e.target.value })}
                     className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
-                    <option value="Dr. Renata Moeloek">Dr. Renata Moeloek</option>
-                    <option value="Dr. Smith">Dr. Smith</option>
-                    <option value="Dr. Adams">Dr. Adams</option>
+                    <option value="Dr. Youssef">Dr. Youssef</option>
+                    <option value="Dr. Aymen">Dr. Aymen</option>
                   </select>
                 </div>
 
@@ -119,9 +118,9 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                     className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="Consultation">Consultation</option>
-                    <option value="Follow-up">Follow-up</option>
-                    <option value="Surgery">Surgery</option>
-                    <option value="Cancelled">Cancelled</option>
+                    <option value="Follow-up">Suivi</option>
+                    <option value="Surgery">Chirurgie</option>
+                    <option value="Cancelled">Annulé</option>
                   </select>
                 </div>
 
@@ -137,7 +136,7 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Start Time</label>
+                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Heure de début</label>
                   <input
                     type="time"
                     value={formData.startTime}
@@ -148,7 +147,7 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">End Time</label>
+                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Heure de fin</label>
                   <input
                     type="time"
                     value={formData.endTime}
@@ -164,7 +163,7 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[80px]"
-                    placeholder="Add any special instructions..."
+                    placeholder="Ajoutez des instructions spéciales..."
                   />
                 </div>
               </div>
@@ -177,7 +176,7 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                     className="px-4 py-2 rounded-btn border border-red-200 text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"
                   >
                     <Trash2 size={18} />
-                    Delete
+                    Supprimer
                   </button>
                 )}
                 <div className="flex-1 flex gap-3">
@@ -186,13 +185,13 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                     onClick={onClose}
                     className="flex-1 px-4 py-2 rounded-btn border border-border-subtle font-bold text-text-secondary hover:bg-bg-soft transition-colors"
                   >
-                    Cancel
+                    Annuler
                   </button>
                   <button
                     type="submit"
                     className="flex-1 px-4 py-2 rounded-btn bg-accent text-primary font-bold shadow-md hover:brightness-110 transition-all active:scale-95"
                   >
-                    {isEdit ? 'Update' : 'Save'} Appointment
+                    {isEdit ? 'Mettre à jour' : 'Enregistrer'} le rendez-vous
                   </button>
                 </div>
               </div>

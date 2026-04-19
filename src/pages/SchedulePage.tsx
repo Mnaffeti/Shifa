@@ -16,6 +16,7 @@ import {
   subWeeks,
   isToday
 } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppointments, Appointment, AppointmentType } from '../context/AppointmentContext';
@@ -88,12 +89,12 @@ export default function SchedulePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <h1 className="text-3xl font-medium text-text-primary tracking-tight">Schedule</h1>
+          <h1 className="text-3xl font-medium text-text-primary tracking-tight">Planning</h1>
           <div className="flex items-center gap-4">
             <h2 className="text-[16px] font-medium text-text-primary tracking-[-0.02em] min-w-[160px]">
-              {view === 'Month' ? format(currentDate, 'MMMM yyyy') : 
-               view === 'Week' ? `Week of ${format(startOfWeek(currentDate), 'MMM d')}` :
-               format(currentDate, 'MMMM d, yyyy')}
+              {view === 'Month' ? format(currentDate, 'MMMM yyyy', { locale: fr }) : 
+               view === 'Week' ? `Semaine du ${format(startOfWeek(currentDate, { locale: fr }), 'd MMM', { locale: fr })}` :
+               format(currentDate, 'd MMMM yyyy', { locale: fr })}
             </h2>
             <div className="flex items-center gap-1">
               <button onClick={prev} className="p-1 hover:bg-bg-soft rounded-md transition-colors text-text-muted">
@@ -103,7 +104,7 @@ export default function SchedulePage() {
                 onClick={() => setCurrentDate(new Date())}
                 className="px-3 py-1 bg-white border-[0.5px] border-border-subtle rounded-md text-[12px] font-normal tracking-[0.02em] hover:bg-bg-soft transition-colors"
               >
-                Today
+                Aujourd'hui
               </button>
               <button onClick={next} className="p-1 hover:bg-bg-soft rounded-md transition-colors text-text-muted">
                 <ChevronRight size={20} />
@@ -114,15 +115,15 @@ export default function SchedulePage() {
 
         <div className="flex items-center gap-3">
           <div className="flex bg-[#F3F4F6] p-1 rounded-pill border-[0.5px] border-border-subtle">
-            {(['Month', 'Week', 'Day'] as CalendarView[]).map((v) => (
+            {([['Month', 'Mois'], ['Week', 'Semaine'], ['Day', 'Jour']] as const).map(([v, label]) => (
               <button
                 key={v}
-                onClick={() => setView(v)}
+                onClick={() => setView(v as any)}
                 className={`px-4 py-1.5 rounded-pill text-[12px] font-normal tracking-[0.02em] transition-all ${
                   view === v ? 'bg-white text-primary shadow-sm' : 'text-text-secondary hover:text-primary'
                 }`}
               >
-                {v}
+                {label}
               </button>
             ))}
           </div>
@@ -136,7 +137,7 @@ export default function SchedulePage() {
               className="flex items-center gap-2 bg-accent text-primary px-5 py-2.5 rounded-pill font-medium text-[12px] tracking-[0.02em] shadow-md hover:brightness-110 transition-all active:scale-95"
             >
               <Plus size={18} />
-              Add Appointment
+              Ajouter un RDV
             </button>
           )}
         </div>
@@ -186,7 +187,7 @@ function MonthView({ currentDate, appointments, onDayClick, onAppointmentClick }
   const endDate = endOfWeek(monthEnd);
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weekDays = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
 
   // Group days into weeks for week numbers
   const weeks = [];
@@ -260,7 +261,7 @@ function MonthView({ currentDate, appointments, onDayClick, onAppointmentClick }
                       ))}
                       {dayAppointments.length > 3 && (
                         <span className="text-[10px] font-medium text-text-muted pl-1">
-                          + {dayAppointments.length - 3} more
+                          + {dayAppointments.length - 3} de plus
                         </span>
                       )}
                     </div>
@@ -297,7 +298,7 @@ function WeekView({ currentDate, appointments, onAppointmentClick }: any) {
                 <p className={`text-[10px] font-medium uppercase tracking-[0.08em] mb-1 ${
                   isWeekend ? 'text-[#B83280]/60' : 'text-text-muted'
                 }`}>
-                  {format(day, 'EEE')}
+                  {format(day, 'EEE', { locale: fr })}
                 </p>
                 <div className="flex justify-center">
                   <p className={`text-[13px] ${
@@ -379,14 +380,14 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="p-8 border-b-[0.5px] border-border-subtle bg-[#F9FAFB] flex items-center gap-6">
-        <div className="w-16 h-16 bg-primary rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
-          <span className="text-[10px] font-medium uppercase leading-none mb-1 tracking-[0.08em]">{format(currentDate, 'MMM')}</span>
-          <span className="text-3xl font-semibold leading-none">{format(currentDate, 'd')}</span>
-        </div>
-        <div>
-          <h2 className="text-2xl font-medium text-text-primary tracking-tight">{format(currentDate, 'EEEE')}</h2>
-          <p className="text-sm font-normal text-text-secondary">You have {dayAppointments.length} appointments scheduled</p>
-        </div>
+          <div className="w-16 h-16 bg-primary rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
+            <span className="text-[10px] font-medium uppercase leading-none mb-1 tracking-[0.08em]">{format(currentDate, 'MMM', { locale: fr })}</span>
+            <span className="text-3xl font-semibold leading-none">{format(currentDate, 'd')}</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-medium text-text-primary tracking-tight">{format(currentDate, 'EEEE', { locale: fr })}</h2>
+            <p className="text-sm font-normal text-text-secondary">Vous avez {dayAppointments.length} rendez-vous prévus</p>
+          </div>
       </div>
 
       <div className="flex-1 p-8">
@@ -437,7 +438,12 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
                               <User size={20} />
                             </div>
                             <div>
-                              <p className="text-[10px] font-medium uppercase opacity-70 mb-0.5 tracking-[0.08em]">{apt.type}</p>
+                              <p className="text-[10px] font-medium uppercase opacity-70 mb-0.5 tracking-[0.08em]">
+                                {apt.type === 'Consultation' ? 'Consultation' :
+                                 apt.type === 'Follow-up' ? 'Suivi' :
+                                 apt.type === 'Surgery' ? 'Chirurgie' :
+                                 apt.type === 'Cancelled' ? 'Annulé' : apt.type}
+                              </p>
                               <p className="text-[13px] font-medium">{apt.patientName}</p>
                               <div className="flex items-center gap-2 text-[11px] font-medium">
                                 <Clock size={12} />
@@ -452,7 +458,12 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
                                 backgroundColor: apt.status === 'Completed' ? '#1A6B5A' : '#2B7FBF' 
                               }} 
                             />
-                            <span className="text-[10px] font-medium uppercase tracking-[0.08em]">{apt.status}</span>
+                            <span className="text-[10px] font-medium uppercase tracking-[0.08em]">
+                              {apt.status === 'Completed' ? 'Terminé' : 
+                               apt.status === 'Confirmed' ? 'Confirmé' : 
+                               apt.status === 'Pending' ? 'En attente' : 
+                               apt.status === 'Cancelled' ? 'Annulé' : apt.status}
+                            </span>
                           </div>
                         </div>
                       );

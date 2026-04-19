@@ -11,11 +11,11 @@ export default function SecretaryNavbar({ currentView, onViewChange }: Secretary
   const { user, logout } = useAuth();
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'appointments', label: 'Appointments', icon: Calendar },
+    { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { id: 'appointments', label: 'Rendez-vous', icon: Calendar },
     { id: 'patients', label: 'Patients', icon: Users },
-    { id: 'schedule', label: 'Schedule', icon: Clock },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'schedule', label: 'Planning', icon: Clock },
+    { id: 'settings', label: 'Paramètres', icon: Settings },
   ];
 
   return (
@@ -55,7 +55,7 @@ export default function SecretaryNavbar({ currentView, onViewChange }: Secretary
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
           <input 
             type="text" 
-            placeholder="Search patients, doctors..." 
+            placeholder="Rechercher patients, médecins..." 
             className="w-full pl-12 pr-4 py-2.5 bg-white/30 backdrop-blur-md border border-white/40 rounded-pill text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium shadow-sm"
           />
         </div>
@@ -71,7 +71,7 @@ export default function SecretaryNavbar({ currentView, onViewChange }: Secretary
           <div className="text-right">
             <p className="text-sm font-bold text-text-primary leading-none mb-1">{user?.name}</p>
             <span className="px-2 py-0.5 bg-gray-100 text-text-muted text-[10px] font-bold rounded-full uppercase tracking-wider">
-              Secretary
+              Secrétaire
             </span>
           </div>
           <div className="w-10 h-10 rounded-full bg-bg-soft overflow-hidden border-2 border-white shadow-sm cursor-pointer">
@@ -85,7 +85,7 @@ export default function SecretaryNavbar({ currentView, onViewChange }: Secretary
               className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"
             >
               <LogOut size={16} />
-              Logout
+              Déconnexion
             </button>
           </div>
         </div>

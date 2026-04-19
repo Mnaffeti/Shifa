@@ -18,10 +18,10 @@ export default function DoctorDashboard() {
       <div className="flex flex-col gap-8 min-w-0">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold text-text-primary font-heading leading-tight tracking-tight">
-            Hello, {user?.name} 👋
+            Bonjour, {user?.name} 👋
           </h1>
           <p className="text-base font-medium text-text-secondary">
-            You have a busy schedule today. Check your upcoming appointments.
+            Vous avez un emploi du temps chargé aujourd'hui. Consultez vos prochains rendez-vous.
           </p>
         </div>
 

@@ -14,7 +14,7 @@ export default function SidebarStats() {
       {user?.role === 'DOCTOR' && (
         <StatCard
           icon={DollarSign}
-          label="Total Revenue"
+          label="Revenu Total"
           value={`${totalRevenue.toLocaleString()} TND`}
           update="+2.5%"
           sparkline
@@ -22,19 +22,19 @@ export default function SidebarStats() {
       )}
       <StatCard
         icon={Users}
-        label="Total Appointments"
+        label="Total Rendez-vous"
         value={totalAppointments.toLocaleString()}
         update="+5.2%"
       />
       <StatCard
         icon={Activity}
-        label="Active Cases"
+        label="Cas Actifs"
         value={activePatients.toLocaleString()}
         update="-1.2%"
       />
       <StatCard
         icon={Heart}
-        label="Recovery Rate"
+        label="Taux de Récupération"
         value={`${Math.round(recoveryRate)}%`}
         update="+0.5%"
       />
@@ -47,10 +47,10 @@ export default function SidebarStats() {
         
         <div className="relative z-10">
           <span className="inline-block px-2 py-1 rounded-md bg-white/10 text-white text-xs font-bold uppercase tracking-widest mb-3">
-            Today's Topic
+            Sujet du jour
           </span>
           <h4 className="text-white text-lg font-bold leading-tight tracking-tight">
-            How to maintain <span className="text-accent">Heart Health</span> in the digital age
+            Comment maintenir une <span className="text-accent">santé cardiaque</span> à l'ère du numérique
           </h4>
         </div>
       </div>

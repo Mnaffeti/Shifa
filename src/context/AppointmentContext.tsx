@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type AppointmentType = 'Consultation' | 'Follow-up' | 'Surgery' | 'Cancelled';
 
@@ -35,43 +35,63 @@ const AppointmentContext = createContext<AppointmentContextType | undefined>(und
 
 export function AppointmentProvider({ children }: { children: ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    { 
-      id: '1', 
-      patientId: 'PT-001', 
-      patientName: 'John Doe', 
-      doctor: 'Dr. Smith', 
-      date: '2024-04-15', 
-      startTime: '10:00', 
-      endTime: '10:45', 
-      type: 'Consultation', 
-      status: 'Completed',
-      revenue: 150
-    },
-    { 
-      id: '2', 
-      patientId: 'PT-002', 
-      patientName: 'Jane Roe', 
-      doctor: 'Dr. Adams', 
-      date: '2024-04-15', 
-      startTime: '11:30', 
-      endTime: '12:00', 
-      type: 'Follow-up', 
-      status: 'Pending' 
-    },
-    { 
-      id: '3', 
-      patientId: 'PT-001', 
-      patientName: 'John Doe', 
-      doctor: 'Dr. Smith', 
-      date: '2024-04-16', 
-      startTime: '09:00', 
-      endTime: '10:30', 
-      type: 'Surgery', 
-      status: 'Completed',
-      revenue: 1200
-    }
-  ]);
+  const [appointments, setAppointments] = useState<Appointment[]>(() => {
+    const saved = localStorage.getItem('shifa_appointments');
+    if (saved) return JSON.parse(saved);
+
+    return [
+      { 
+        id: '1', 
+        patientId: 'PT-001', 
+        patientName: 'John Doe', 
+        doctor: 'Dr. Youssef', 
+        date: new Date().toISOString().split('T')[0], 
+        startTime: '10:00', 
+        endTime: '10:45', 
+        type: 'Consultation', 
+        status: 'Completed',
+        revenue: 150
+      },
+      { 
+        id: '1689234', 
+        patientId: 'PT-001', 
+        patientName: 'John Doe', 
+        doctor: 'Dr. Youssef', 
+        date: new Date().toISOString().split('T')[0], 
+        startTime: '14:30', 
+        endTime: '15:15', 
+        type: 'Consultation', 
+        status: 'Confirmed'
+      },
+      { 
+        id: '2', 
+        patientId: 'PT-002', 
+        patientName: 'Jane Roe', 
+        doctor: 'Dr. Aymen', 
+        date: new Date().toISOString().split('T')[0], 
+        startTime: '11:30', 
+        endTime: '12:00', 
+        type: 'Follow-up', 
+        status: 'Pending' 
+      },
+      { 
+        id: '3', 
+        patientId: 'PT-001', 
+        patientName: 'John Doe', 
+        doctor: 'Dr. Youssef', 
+        date: '2024-04-16', 
+        startTime: '09:00', 
+        endTime: '10:30', 
+        type: 'Surgery', 
+        status: 'Completed',
+        revenue: 1200
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('shifa_appointments', JSON.stringify(appointments));
+  }, [appointments]);
 
   const addAppointment = (apt: Omit<Appointment, 'id'>) => {
     const newApt: Appointment = {

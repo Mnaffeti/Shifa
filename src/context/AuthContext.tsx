@@ -30,10 +30,10 @@ const ACCOUNTS = [
   {
     email: 'doctor@medica.com',
     password: 'doctor123',
-    name: 'Dr. Renata Moeloek',
+    name: 'Dr. Youssef',
     role: 'DOCTOR' as UserRole,
-    specialty: 'Specialist',
-    avatar: 'https://picsum.photos/seed/doctor-renata/100/100'
+    specialty: 'Spécialiste',
+    avatar: 'https://picsum.photos/seed/doctor-youssef/100/100'
   }
 ];
 

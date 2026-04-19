@@ -18,27 +18,27 @@ export default function SecretaryDashboard() {
     <div className="flex flex-col gap-8">
       {/* Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
+          <StatCard
           icon={Calendar}
-          label="Today's Appointments"
+          label="Rendez-vous aujourd'hui"
           value={todayAppointments.length.toString()}
           update="+2"
         />
         <StatCard
           icon={CheckCircle2}
-          label="Pending Confirmations"
+          label="Confirmations en attente"
           value={pendingConfirmations.length.toString()}
           update="-1"
         />
         <StatCard
           icon={UserPlus}
-          label="New Patients Today"
+          label="Nouveaux patients aujourd'hui"
           value={newPatientsToday.toString()}
           update="+3"
         />
         <StatCard
           icon={XCircle}
-          label="Cancelled Today"
+          label="Annulés aujourd'hui"
           value={cancelledToday.toString()}
           update="0"
         />
@@ -47,13 +47,13 @@ export default function SecretaryDashboard() {
       {/* Main Content */}
       <div className="bg-white rounded-[24px] shadow-card border border-border-subtle overflow-hidden">
         <div className="p-6 border-b border-border-subtle flex items-center justify-between">
-          <h3 className="text-2xl font-bold text-text-primary">Today's Appointment List</h3>
+          <h3 className="text-2xl font-bold text-text-primary">Liste des rendez-vous aujourd'hui</h3>
           <button 
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 px-6 py-2.5 bg-[#C8E04A] text-primary font-bold rounded-pill shadow-md hover:brightness-105 transition-all active:scale-95"
           >
             <Plus size={18} />
-            Quick Add Appointment
+            Ajout rapide rdv
           </button>
         </div>
 
@@ -61,11 +61,11 @@ export default function SecretaryDashboard() {
           <table className="w-full text-left">
             <thead className="bg-[#F9FAFB] border-b border-border-subtle">
               <tr>
-                <th className="px-6 py-4 table-header">Time</th>
+                <th className="px-6 py-4 table-header">Heure</th>
                 <th className="px-6 py-4 table-header">Patient</th>
-                <th className="px-6 py-4 table-header">Doctor</th>
+                <th className="px-6 py-4 table-header">Médecin</th>
                 <th className="px-6 py-4 table-header">Type</th>
-                <th className="px-6 py-4 table-header">Status</th>
+                <th className="px-6 py-4 table-header">Statut</th>
                 <th className="px-6 py-4 table-header text-right">Actions</th>
               </tr>
             </thead>
@@ -115,7 +115,10 @@ export default function SecretaryDashboard() {
                           }} 
                         />
                         <span className="text-[13px] font-normal text-text-primary">
-                          {apt.status}
+                          {apt.status === 'Confirmed' ? 'Confirmé' : 
+                           apt.status === 'Cancelled' ? 'Annulé' : 
+                           apt.status === 'Pending' ? 'En attente' : 
+                           apt.status === 'Completed' ? 'Terminé' : apt.status}
                         </span>
                       </div>
                     </td>
@@ -152,7 +155,7 @@ export default function SecretaryDashboard() {
               ) : (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-text-muted font-medium">
-                    No appointments scheduled for today.
+                    Aucun rendez-vous prévu pour aujourd'hui.
                   </td>
                 </tr>
               )}

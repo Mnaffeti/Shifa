@@ -62,7 +62,7 @@ export default function PrescriptionModal({ isOpen, onClose, patientName }: Pres
     // Table
     autoTable(doc, {
       startY: 55,
-      head: [['Medication', 'Dosage', 'Frequency', 'Duration']],
+      head: [['Médicament', 'Dosage', 'Fréquence', 'Durée']],
       body: medications.map(m => [m.name, m.dosage, m.frequency, m.duration]),
       headStyles: { fillColor: [26, 71, 71], textColor: [255, 255, 255] },
       alternateRowStyles: { fillColor: [249, 250, 251] },
@@ -73,7 +73,7 @@ export default function PrescriptionModal({ isOpen, onClose, patientName }: Pres
     const finalY = (doc as any).lastAutoTable?.finalY || 150;
     doc.setFontSize(10);
     doc.setTextColor(156, 163, 175);
-    doc.text('Doctor Signature:', 20, finalY + 30);
+    doc.text('Signature du médecin:', 20, finalY + 30);
     doc.line(20, finalY + 35, 80, finalY + 35);
 
     doc.save(`Prescription_${patientName.replace(/\s/g, '_')}.pdf`);
@@ -117,13 +117,13 @@ export default function PrescriptionModal({ isOpen, onClose, patientName }: Pres
                   </button>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1">Medication Name</label>
+                      <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1">Nom du Médicament</label>
                       <input
                         type="text"
                         value={med.name}
                         onChange={(e) => updateMedication(index, 'name', e.target.value)}
                         className="w-full px-3 py-1.5 rounded-btn border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="e.g. Paracetamol"
+                        placeholder="ex. Paracétamol"
                       />
                     </div>
                     <div>
@@ -133,27 +133,27 @@ export default function PrescriptionModal({ isOpen, onClose, patientName }: Pres
                         value={med.dosage}
                         onChange={(e) => updateMedication(index, 'dosage', e.target.value)}
                         className="w-full px-3 py-1.5 rounded-btn border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="e.g. 500mg"
+                        placeholder="ex. 500mg"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1">Frequency</label>
+                      <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1">Fréquence</label>
                       <input
                         type="text"
                         value={med.frequency}
                         onChange={(e) => updateMedication(index, 'frequency', e.target.value)}
                         className="w-full px-3 py-1.5 rounded-btn border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="e.g. 3 times a day"
+                        placeholder="ex. 3 fois par jour"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1">Duration</label>
+                      <label className="block text-[10px] font-bold text-text-secondary uppercase mb-1">Durée</label>
                       <input
                         type="text"
                         value={med.duration}
                         onChange={(e) => updateMedication(index, 'duration', e.target.value)}
                         className="w-full px-3 py-1.5 rounded-btn border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="e.g. 7 days"
+                        placeholder="ex. 7 jours"
                       />
                     </div>
                   </div>
@@ -164,7 +164,7 @@ export default function PrescriptionModal({ isOpen, onClose, patientName }: Pres
                 onClick={addMedication}
                 className="w-full py-2 border-2 border-dashed border-border-subtle rounded-btn text-sm font-bold text-text-muted hover:text-primary hover:border-primary transition-all"
               >
-                + Add Medication
+                + Ajouter un Médicament
               </button>
             </div>
 
@@ -173,7 +173,7 @@ export default function PrescriptionModal({ isOpen, onClose, patientName }: Pres
                 onClick={onClose}
                 className="px-6 py-2 rounded-btn border border-border-subtle font-bold text-text-secondary hover:bg-bg-soft transition-colors"
               >
-                Close
+                Fermer
               </button>
               <div className="flex-1 flex gap-3 justify-end">
                 <button
@@ -181,14 +181,14 @@ export default function PrescriptionModal({ isOpen, onClose, patientName }: Pres
                   className="flex items-center gap-2 px-4 py-2 rounded-btn border border-primary text-primary font-bold hover:bg-primary/5 transition-colors"
                 >
                   <Printer size={18} />
-                  Print
+                  Imprimer
                 </button>
                 <button
                   onClick={generatePDF}
                   className="flex items-center gap-2 px-6 py-2 rounded-btn bg-primary text-white font-bold shadow-md hover:brightness-110 transition-all active:scale-95"
                 >
                   <Download size={18} />
-                  Export PDF
+                  Récupérer PDF
                 </button>
               </div>
             </div>

@@ -17,7 +17,7 @@ export default function LoginPage() {
     setError('');
     const success = login(email, password);
     if (!success) {
-      setError('Invalid credentials');
+      setError('Identifiants invalides');
     }
   };
 
@@ -55,8 +55,8 @@ export default function LoginPage() {
             </div>
 
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-text-primary mb-2 font-heading tracking-tight leading-tight">Welcome Back</h1>
-              <p className="text-base font-medium text-text-secondary">Please select your role and sign in.</p>
+              <h1 className="text-3xl font-bold text-text-primary mb-2 font-heading tracking-tight leading-tight">Bon retour</h1>
+              <p className="text-base font-medium text-text-secondary">Veuillez sélectionner votre rôle et vous connecter.</p>
             </div>
 
             {/* Role Selection */}
@@ -69,7 +69,7 @@ export default function LoginPage() {
                     : 'text-text-muted hover:text-text-primary'
                 }`}
               >
-                Doctor
+                Médecin
               </button>
               <button
                 onClick={() => setCredentials('SECRETARY')}
@@ -79,7 +79,7 @@ export default function LoginPage() {
                     : 'text-text-muted hover:text-text-primary'
                 }`}
               >
-                Secretary
+                Secrétaire
               </button>
             </div>
 
@@ -96,7 +96,7 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Email Address</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Adresse Email</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
                   <input
@@ -104,14 +104,14 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
-                    placeholder="doctor@shifa.com"
+                    placeholder="medecin@shifa.com"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Password</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Mot de passe</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
                   <input
@@ -146,16 +146,16 @@ export default function LoginPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <span className="text-sm font-bold text-text-secondary group-hover:text-primary transition-colors">Remember Me</span>
+                  <span className="text-sm font-bold text-text-secondary group-hover:text-primary transition-colors">Se souvenir de moi</span>
                 </label>
-                <a href="#" className="text-sm font-bold text-primary hover:underline">Forgot Password?</a>
+                <a href="#" className="text-sm font-bold text-primary hover:underline">Mot de passe oublié ?</a>
               </div>
 
               <button
                 type="submit"
                 className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:brightness-110 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg mt-4"
               >
-                Sign In
+                Se connecter
                 <ChevronRight size={22} />
               </button>
             </form>
@@ -163,7 +163,7 @@ export default function LoginPage() {
         </div>
         
         <p className="text-center mt-8 text-text-secondary text-sm font-medium">
-          Don't have an account? <a href="#" className="text-primary font-bold hover:underline">Contact Administrator</a>
+          Vous n'avez pas de compte ? <a href="#" className="text-primary font-bold hover:underline">Contacter l'administrateur</a>
         </p>
       </motion.div>
     </div>

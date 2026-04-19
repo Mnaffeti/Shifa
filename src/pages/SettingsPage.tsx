@@ -5,18 +5,18 @@ import { useAuth } from '../context/AuthContext';
 
 export default function SettingsPage() {
   const { doctor } = useAuth();
-  const [activeSection, setActiveSection] = useState('Profile');
+  const [activeSection, setActiveSection] = useState('Profil');
 
   const sections = [
-    { id: 'Profile', icon: User, label: 'Profile' },
+    { id: 'Profil', icon: User, label: 'Profil' },
     { id: 'Notifications', icon: Bell, label: 'Notifications' },
-    { id: 'Working Hours', icon: Clock, label: 'Working Hours' },
-    { id: 'Security', icon: Shield, label: 'Security' },
+    { id: 'Working Hours', icon: Clock, label: 'Horaires' },
+    { id: 'Security', icon: Shield, label: 'Sécurité' },
   ];
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-3xl font-extrabold text-text-primary font-heading">Settings</h1>
+      <h1 className="text-3xl font-extrabold text-text-primary font-heading">Paramètres</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
         {/* Sidebar */}
@@ -40,16 +40,16 @@ export default function SettingsPage() {
         {/* Content */}
         <div className="bg-white rounded-[24px] shadow-card border border-border-subtle overflow-hidden">
           <div className="p-8">
-            {activeSection === 'Profile' && <ProfileSettings doctor={doctor} />}
+            {activeSection === 'Profil' && <ProfileSettings doctor={doctor} />}
             {activeSection === 'Notifications' && <NotificationSettings />}
-            {activeSection === 'Working Hours' && <WorkingHoursSettings />}
-            {activeSection === 'Security' && <SecuritySettings />}
+            {activeSection === 'Horaires' && <WorkingHoursSettings />}
+            {activeSection === 'Sécurité' && <SecuritySettings />}
           </div>
           
           <div className="px-8 py-6 bg-[#F9FAFB] border-t border-border-subtle flex justify-end">
             <button className="flex items-center gap-2 bg-accent text-primary px-8 py-3 rounded-pill font-bold shadow-md hover:brightness-110 transition-all active:scale-95">
               <Save size={20} />
-              Save Changes
+              Enregistrer
             </button>
           </div>
         </div>
@@ -72,35 +72,35 @@ function ProfileSettings({ doctor }: any) {
         </div>
         <div>
           <h3 className="text-xl font-bold text-text-primary mb-1">{doctor?.name}</h3>
-          <p className="text-text-secondary font-medium">Specialist in Cardiology</p>
-          <p className="text-xs text-text-muted mt-2">Member since Oct 2023</p>
+          <p className="text-text-secondary font-medium">Spécialiste en Cardiologie</p>
+          <p className="text-xs text-text-muted mt-2">Membre depuis oct. 2023</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Full Name</label>
+          <label className="block text-xs font-bold text-text-secondary uppercase">Nom complet</label>
           <div className="relative">
             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
             <input type="text" defaultValue={doctor?.name} className="w-full pl-12 pr-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none" />
           </div>
         </div>
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Specialty</label>
+          <label className="block text-xs font-bold text-text-secondary uppercase">Spécialité</label>
           <div className="relative">
             <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
-            <input type="text" defaultValue="Cardiology" className="w-full pl-12 pr-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none" />
+            <input type="text" defaultValue="Cardiologie" className="w-full pl-12 pr-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none" />
           </div>
         </div>
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Email Address</label>
+          <label className="block text-xs font-bold text-text-secondary uppercase">Adresse Email</label>
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
             <input type="email" defaultValue={doctor?.email} className="w-full pl-12 pr-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none" />
           </div>
         </div>
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Phone Number</label>
+          <label className="block text-xs font-bold text-text-secondary uppercase">Numéro de téléphone</label>
           <div className="relative">
             <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
             <input type="tel" defaultValue="+1 (555) 000-1234" className="w-full pl-12 pr-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none" />
@@ -112,7 +112,13 @@ function ProfileSettings({ doctor }: any) {
 }
 
 function NotificationSettings() {
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState([
+    { key: 'email', label: 'Email', desc: 'Alertes par email pour les nouveaux rendez-vous.' },
+    { key: 'app', label: 'App', desc: 'Notifications push pour les nouveaux rendez-vous.' },
+    { key: 'sms', label: 'SMS', desc: 'Alertes SMS pour les nouveaux rendez-vous.' },
+    { key: 'reminders', label: 'Rappels', desc: 'Rappels automatiques de rendez-vous.' }
+  ]);
+  const [enabledSettings, setEnabledSettings] = useState<Record<string, boolean>>({
     email: true,
     app: true,
     sms: false,
@@ -121,19 +127,19 @@ function NotificationSettings() {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-bold text-text-primary">Notification Preferences</h3>
+      <h3 className="text-lg font-bold text-text-primary">Préférences de notification</h3>
       <div className="space-y-4">
-        {Object.entries(settings).map(([key, value]) => (
-          <div key={key} className="flex items-center justify-between p-4 bg-bg-soft rounded-2xl border border-border-subtle">
+        {settings.map((s) => (
+          <div key={s.key} className="flex items-center justify-between p-4 bg-bg-soft rounded-2xl border border-border-subtle">
             <div>
-              <p className="text-sm font-bold text-text-primary capitalize">{key} Alerts</p>
-              <p className="text-xs text-text-secondary">Receive {key} notifications for new appointments.</p>
+              <p className="text-sm font-bold text-text-primary capitalize">{s.label}</p>
+              <p className="text-xs text-text-secondary">{s.desc}</p>
             </div>
             <button 
-              onClick={() => setSettings(prev => ({ ...prev, [key]: !value }))}
-              className={`w-12 h-6 rounded-full transition-all relative ${value ? 'bg-primary' : 'bg-gray-300'}`}
+              onClick={() => setEnabledSettings(prev => ({ ...prev, [s.key]: !prev[s.key] }))}
+              className={`w-12 h-6 rounded-full transition-all relative ${enabledSettings[s.key] ? 'bg-primary' : 'bg-gray-300'}`}
             >
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${value ? 'right-1' : 'left-1'}`} />
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${enabledSettings[s.key] ? 'right-1' : 'left-1'}`} />
             </button>
           </div>
         ))}
@@ -143,28 +149,36 @@ function NotificationSettings() {
 }
 
 function WorkingHoursSettings() {
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const days = [
+    { en: 'Monday', fr: 'Lundi' },
+    { en: 'Tuesday', fr: 'Mardi' },
+    { en: 'Wednesday', fr: 'Mercredi' },
+    { en: 'Thursday', fr: 'Jeudi' },
+    { en: 'Friday', fr: 'Vendredi' },
+    { en: 'Saturday', fr: 'Samedi' },
+    { en: 'Sunday', fr: 'Dimanche' }
+  ];
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-bold text-text-primary">Availability</h3>
+      <h3 className="text-lg font-bold text-text-primary">Disponibilité</h3>
       <div className="space-y-3">
         {days.map(day => (
-          <div key={day} className="flex items-center justify-between p-4 bg-bg-soft rounded-2xl border border-border-subtle">
-            <span className="text-sm font-bold text-text-primary w-24">{day}</span>
+          <div key={day.en} className="flex items-center justify-between p-4 bg-bg-soft rounded-2xl border border-border-subtle">
+            <span className="text-sm font-bold text-text-primary w-24">{day.fr}</span>
             <div className="flex items-center gap-4">
               <input type="time" defaultValue="08:00" className="px-3 py-1.5 rounded-lg border border-border-subtle text-sm font-medium" />
-              <span className="text-text-muted">to</span>
+              <span className="text-text-muted">à</span>
               <input type="time" defaultValue="20:00" className="px-3 py-1.5 rounded-lg border border-border-subtle text-sm font-medium" />
             </div>
             <div className="flex items-center gap-2">
               <div 
                 className="w-1.5 h-1.5 rounded-full" 
                 style={{ 
-                  backgroundColor: day === 'Sunday' ? '#9A9A9A' : '#1A6B5A' 
+                  backgroundColor: day.en === 'Sunday' ? '#9A9A9A' : '#1A6B5A' 
                 }} 
               />
               <span className="text-[13px] font-normal text-text-primary">
-                {day === 'Sunday' ? 'Closed' : 'Open'}
+                {day.en === 'Sunday' ? 'Fermé' : 'Ouvert'}
               </span>
             </div>
           </div>
@@ -177,18 +191,18 @@ function WorkingHoursSettings() {
 function SecuritySettings() {
   return (
     <div className="space-y-6 max-w-md">
-      <h3 className="text-lg font-bold text-text-primary">Change Password</h3>
+      <h3 className="text-lg font-bold text-text-primary">Changer le mot de passe</h3>
       <div className="space-y-4">
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Current Password</label>
+          <label className="block text-xs font-bold text-text-secondary uppercase">Mot de passe actuel</label>
           <input type="password" placeholder="••••••••" className="w-full px-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none" />
         </div>
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">New Password</label>
+          <label className="block text-xs font-bold text-text-secondary uppercase">Nouveau mot de passe</label>
           <input type="password" placeholder="••••••••" className="w-full px-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none" />
         </div>
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Confirm New Password</label>
+          <label className="block text-xs font-bold text-text-secondary uppercase">Confirmer le nouveau mot de passe</label>
           <input type="password" placeholder="••••••••" className="w-full px-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none" />
         </div>
       </div>

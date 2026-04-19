@@ -37,7 +37,7 @@ export default function PatientsPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by name or ID..."
+              placeholder="Rechercher par nom ou ID..."
               className="w-full pl-12 pr-4 py-2.5 rounded-pill border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white shadow-sm"
             />
           </div>
@@ -47,7 +47,7 @@ export default function PatientsPage() {
               className="flex items-center gap-2 bg-accent text-primary px-6 py-2.5 rounded-pill font-bold text-sm shadow-md hover:brightness-110 transition-all active:scale-95 whitespace-nowrap"
             >
               <Plus size={18} />
-              Add Patient
+              Ajouter Patient
             </button>
           )}
         </div>
@@ -56,25 +56,25 @@ export default function PatientsPage() {
       {/* Filters */}
       <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-border-subtle shadow-sm">
         <div className="flex gap-2">
-          {(['All', 'Active', 'New', 'Inactive'] as const).map(status => (
+          {([['All', 'Tous'], ['Active', 'Actif'], ['New', 'Nouveau'], ['Inactive', 'Inactif']] as const).map(([key, label]) => (
             <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
+              key={key}
+              onClick={() => setFilterStatus(key as any)}
               className={`px-4 py-1.5 rounded-pill text-sm font-bold transition-all ${
-                filterStatus === status ? 'bg-primary text-white' : 'text-text-secondary hover:bg-bg-soft'
+                filterStatus === key ? 'bg-primary text-white' : 'text-text-secondary hover:bg-bg-soft'
               }`}
             >
-              {status}
+              {label}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-2 text-sm font-bold text-text-secondary">
           <Filter size={16} />
-          <span>Sort by:</span>
+          <span>Trier par :</span>
           <select className="bg-transparent focus:outline-none cursor-pointer text-primary">
-            <option>Name</option>
+            <option>Nom</option>
             <option>Date</option>
-            <option>Doctor</option>
+            <option>Médecin</option>
           </select>
         </div>
       </div>
@@ -84,13 +84,13 @@ export default function PatientsPage() {
         <table className="w-full text-left">
           <thead className="bg-[#F9FAFB] border-b border-border-subtle">
             <tr>
-              <th className="px-6 py-4 table-header">Patient Name</th>
-              <th className="px-6 py-4 table-header">Patient ID</th>
-              <th className="px-6 py-4 table-header">Phone</th>
-              <th className="px-6 py-4 table-header">Age</th>
-              <th className="px-6 py-4 table-header">Last Visit</th>
-              <th className="px-6 py-4 table-header">Doctor</th>
-              <th className="px-6 py-4 table-header">Status</th>
+              <th className="px-6 py-4 table-header">Nom du Patient</th>
+              <th className="px-6 py-4 table-header">ID Patient</th>
+              <th className="px-6 py-4 table-header">Téléphone</th>
+              <th className="px-6 py-4 table-header">Âge</th>
+              <th className="px-6 py-4 table-header">Dernière visite</th>
+              <th className="px-6 py-4 table-header">Médecin</th>
+              <th className="px-6 py-4 table-header">Statut</th>
               <th className="px-6 py-4 table-header text-right">Actions</th>
             </tr>
           </thead>
@@ -108,7 +108,7 @@ export default function PatientsPage() {
                 <td className="px-6 py-4 text-base font-bold text-primary tabular">{p.id}</td>
                 <td className="px-6 py-4 text-sm text-text-secondary font-medium">{p.phone}</td>
                 <td className="px-6 py-4 text-sm text-text-secondary font-medium tabular">
-                  {new Date().getFullYear() - new Date(p.dob).getFullYear()} yrs
+                  {new Date().getFullYear() - new Date(p.dob).getFullYear()} ans
                 </td>
                 <td className="px-6 py-4 text-sm text-text-secondary font-medium tabular">{p.lastVisit}</td>
                 <td className="px-6 py-4 text-sm text-text-secondary font-medium">{p.assignedDoctor}</td>
@@ -122,7 +122,9 @@ export default function PatientsPage() {
                       }} 
                     />
                     <span className="text-[13px] font-normal text-text-primary">
-                      {p.status}
+                      {p.status === 'Active' ? 'Actif' : 
+                       p.status === 'New' ? 'Nouveau' : 
+                       p.status === 'Inactive' ? 'Inactif' : p.status}
                     </span>
                   </div>
                 </td>
@@ -170,7 +172,7 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     phone: '',
     email: '',
     address: '',
-    assignedDoctor: 'Dr. Renata Moeloek',
+    assignedDoctor: 'Dr. Youssef',
     bloodType: 'A+'
   });
 
@@ -198,7 +200,7 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-2xl overflow-hidden"
           >
             <div className="p-6 border-b border-border-subtle flex items-center justify-between bg-primary text-white">
-              <h2 className="text-xl font-bold">Add New Patient</h2>
+              <h2 className="text-xl font-bold">Ajouter un nouveau patient</h2>
               <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
                 <X size={20} />
               </button>
@@ -206,7 +208,7 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
             <form onSubmit={handleSubmit} className="p-8 grid grid-cols-2 gap-6">
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">First Name</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Prénom</label>
                 <input
                   type="text"
                   value={formData.firstName}
@@ -216,7 +218,7 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Last Name</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Nom</label>
                 <input
                   type="text"
                   value={formData.lastName}
@@ -226,7 +228,7 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Date of Birth</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Date de naissance</label>
                 <input
                   type="date"
                   value={formData.dob}
@@ -236,19 +238,19 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Gender</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Genre</label>
                 <select
                   value={formData.gender}
                   onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  <option>Male</option>
-                  <option>Female</option>
-                  <option>Other</option>
+                  <option>Homme</option>
+                  <option>Femme</option>
+                  <option>Autre</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Phone</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Téléphone</label>
                 <input
                   type="tel"
                   value={formData.phone}
@@ -268,7 +270,7 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 />
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Address</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Adresse</label>
                 <input
                   type="text"
                   value={formData.address}
@@ -278,19 +280,18 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Assigned Doctor</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Médecin assigné</label>
                 <select
                   value={formData.assignedDoctor}
                   onChange={(e) => setFormData({ ...formData, assignedDoctor: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  <option>Dr. Renata Moeloek</option>
-                  <option>Dr. Smith</option>
-                  <option>Dr. Adams</option>
+                  <option>Dr. Youssef</option>
+                  <option>Dr. Aymen</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Blood Type</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Groupe sanguin</label>
                 <select
                   value={formData.bloodType}
                   onChange={(e) => setFormData({ ...formData, bloodType: e.target.value })}
@@ -313,13 +314,13 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                   onClick={onClose}
                   className="flex-1 px-4 py-3 rounded-xl border border-border-subtle font-bold text-text-secondary hover:bg-bg-soft transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   type="submit"
                   className="flex-1 px-4 py-3 rounded-xl bg-accent text-primary font-bold shadow-lg hover:brightness-110 transition-all active:scale-95"
                 >
-                  Save Patient
+                  Sauvegarder Patient
                 </button>
               </div>
             </form>
@@ -343,7 +344,7 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
         className="flex items-center gap-2 text-primary font-bold hover:underline w-fit"
       >
         <ChevronLeft size={20} />
-        Back to Patients
+        Retour aux patients
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
@@ -357,11 +358,11 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
           
           <div className="grid grid-cols-2 gap-4 w-full mb-8">
             <div className="bg-bg-soft p-4 rounded-2xl">
-              <p className="text-[10px] font-bold text-text-muted uppercase mb-1">Age</p>
+              <p className="text-[10px] font-bold text-text-muted uppercase mb-1">Âge</p>
               <p className="text-lg font-bold text-text-primary">{new Date().getFullYear() - new Date(patient.dob).getFullYear()}</p>
             </div>
             <div className="bg-bg-soft p-4 rounded-2xl">
-              <p className="text-[10px] font-bold text-text-muted uppercase mb-1">Blood Type</p>
+              <p className="text-[10px] font-bold text-text-muted uppercase mb-1">Groupe Sanguin</p>
               <div className="flex items-center justify-center gap-2">
                 <Droplets size={16} className="text-red-500" />
                 <p className="text-lg font-bold text-text-primary">{patient.bloodType}</p>
@@ -375,7 +376,7 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
                 <Phone size={18} />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-text-muted uppercase">Phone</p>
+                <p className="text-[10px] font-bold text-text-muted uppercase">Téléphone</p>
                 <p className="text-sm font-bold text-text-primary">{patient.phone}</p>
               </div>
             </div>
@@ -393,7 +394,7 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
                 <MapPin size={18} />
               </div>
               <div>
-                <p className="text-[10px] font-bold text-text-muted uppercase">Address</p>
+                <p className="text-[10px] font-bold text-text-muted uppercase">Adresse</p>
                 <p className="text-sm font-bold text-text-primary">{patient.address}</p>
               </div>
             </div>
@@ -403,16 +404,21 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
         {/* Content Tabs */}
         <div className="bg-white rounded-[24px] shadow-card border border-border-subtle overflow-hidden flex flex-col">
           <div className="flex border-b border-border-subtle px-6">
-            {['Info', 'Appointments', 'Ordonnances', 'Notes'].map(tab => (
+            {[
+              { id: 'Info', label: 'Info' },
+              { id: 'Appointments', label: 'Rendez-vous' },
+              { id: 'Ordonnances', label: 'Ordonnances' },
+              { id: 'Notes', label: 'Notes' }
+            ].map(tab => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
                 className={`px-6 py-4 text-sm font-bold transition-all relative ${
-                  activeTab === tab ? 'text-primary' : 'text-text-muted hover:text-text-primary'
+                  activeTab === tab.id ? 'text-primary' : 'text-text-muted hover:text-text-primary'
                 }`}
               >
-                {tab}
-                {activeTab === tab && (
+                {tab.label}
+                {activeTab === tab.id && (
                   <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full" />
                 )}
               </button>
@@ -423,22 +429,22 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
             {activeTab === 'Info' && (
               <div className="grid grid-cols-2 gap-8">
                 <div>
-                  <h4 className="text-sm font-bold text-text-muted uppercase mb-4 tracking-wider">Medical History</h4>
+                  <h4 className="text-sm font-bold text-text-muted uppercase mb-4 tracking-wider">Antécédents Médicaux</h4>
                   <div className="space-y-4">
                     <div className="p-4 bg-bg-soft rounded-2xl border border-border-subtle">
                       <p className="text-sm font-bold text-text-primary mb-1">Hypertension</p>
-                      <p className="text-xs text-text-secondary">Diagnosed in 2020. Currently managed with medication.</p>
+                      <p className="text-xs text-text-secondary">Diagnostiqué en 2020. Actuellement géré par médicaments.</p>
                     </div>
                     <div className="p-4 bg-bg-soft rounded-2xl border border-border-subtle">
                       <p className="text-sm font-bold text-text-primary mb-1">Allergies</p>
-                      <p className="text-xs text-text-secondary">Penicillin, Peanuts.</p>
+                      <p className="text-xs text-text-secondary">Pénicilline, Cacahuètes.</p>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-text-muted uppercase mb-4 tracking-wider">Recent Notes</h4>
+                  <h4 className="text-sm font-bold text-text-muted uppercase mb-4 tracking-wider">Notes Récentes</h4>
                   <div className="p-6 bg-accent/10 rounded-2xl border border-accent/20 italic text-sm text-primary font-medium">
-                    "Patient reports improved sleep quality after adjusting medication dosage. Continue monitoring blood pressure weekly."
+                    "Le patient signale une amélioration de la qualité du sommeil après l'ajustement du dosage des médicaments. Continuer à surveiller la pression artérielle chaque semaine."
                   </div>
                 </div>
               </div>
@@ -455,7 +461,12 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
                           <span className="text-lg font-black text-primary leading-none">{format(new Date(apt.date), 'd')}</span>
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-text-primary">{apt.type}</p>
+                          <p className="text-sm font-bold text-text-primary">
+                            {apt.type === 'Consultation' ? 'Consultation' :
+                             apt.type === 'Follow-up' ? 'Suivi' :
+                             apt.type === 'Surgery' ? 'Chirurgie' :
+                             apt.type === 'Cancelled' ? 'Annulé' : apt.type}
+                          </p>
                           <p className="text-xs text-text-secondary font-medium">{apt.doctor} • {apt.startTime}</p>
                         </div>
                       </div>
@@ -467,13 +478,16 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
                           }} 
                         />
                         <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-primary">
-                          {apt.status}
+                          {apt.status === 'Completed' ? 'Terminé' : 
+                           apt.status === 'Confirmed' ? 'Confirmé' : 
+                           apt.status === 'Pending' ? 'En attente' : 
+                           apt.status === 'Cancelled' ? 'Annulé' : apt.status}
                         </span>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-center py-12 text-text-muted font-medium">No appointments found.</p>
+                  <p className="text-center py-12 text-text-muted font-medium">Aucun rendez-vous trouvé.</p>
                 )}
               </div>
             )}
@@ -486,11 +500,11 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
                       <FileText size={24} />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-text-primary">Prescription #ORD-2024-001</p>
-                      <p className="text-xs text-text-secondary font-medium">Issued on April 10, 2024</p>
+                      <p className="text-sm font-bold text-text-primary">Ordonnance #ORD-2024-001</p>
+                      <p className="text-xs text-text-secondary font-medium">Délivrée le 10 avril 2024</p>
                     </div>
                   </div>
-                  <button className="text-primary font-bold text-sm hover:underline">View PDF</button>
+                  <button className="text-primary font-bold text-sm hover:underline">Voir PDF</button>
                 </div>
               </div>
             )}

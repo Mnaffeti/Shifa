@@ -34,21 +34,21 @@ export default function SecretaryAppointmentsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-text-primary">All Appointments</h2>
+        <h2 className="text-2xl font-bold text-text-primary">Tous les rendez-vous</h2>
         <div className="flex items-center gap-3">
           <button 
             onClick={exportToCSV}
             className="flex items-center gap-2 px-4 py-2 border border-border-subtle rounded-pill text-sm font-bold text-text-secondary hover:bg-bg-soft transition-all"
           >
             <Download size={18} />
-            Export CSV
+            Exporter CSV
           </button>
           <button 
             onClick={() => setIsModalOpen(true)}
             className="flex items-center gap-2 px-6 py-2 bg-[#C8E04A] text-primary font-bold rounded-pill shadow-md hover:brightness-105 transition-all"
           >
             <Plus size={18} />
-            Add Appointment
+            Ajouter un rendez-vous
           </button>
         </div>
       </div>
@@ -59,7 +59,7 @@ export default function SecretaryAppointmentsPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
             <input 
               type="text" 
-              placeholder="Search by patient or doctor..." 
+              placeholder="Rechercher par patient ou médecin..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-12 pr-4 py-2.5 bg-bg-soft rounded-pill text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
@@ -72,11 +72,11 @@ export default function SecretaryAppointmentsPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="bg-bg-soft border-none rounded-pill px-4 py-2.5 text-sm font-bold text-text-secondary focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer"
             >
-              <option value="All">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Confirmed">Confirmed</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="All">Tous les statuts</option>
+              <option value="Pending">En attente</option>
+              <option value="Confirmed">Confirmé</option>
+              <option value="Completed">Terminé</option>
+              <option value="Cancelled">Annulé</option>
             </select>
           </div>
         </div>
@@ -85,11 +85,11 @@ export default function SecretaryAppointmentsPage() {
           <table className="w-full text-left">
             <thead className="bg-[#F9FAFB] border-b border-border-subtle">
               <tr>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Date & Time</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Date & Heure</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Patient</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Doctor</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Médecin</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Type</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider">Statut</th>
                 <th className="px-6 py-4 text-[11px] font-bold text-text-muted uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
@@ -108,7 +108,10 @@ export default function SecretaryAppointmentsPage() {
                   <td className="px-6 py-4 text-sm text-text-secondary font-medium">{apt.doctor}</td>
                   <td className="px-6 py-4">
                     <span className="text-[13px] font-normal text-text-primary">
-                      {apt.type}
+                      {apt.type === 'Consultation' ? 'Consultation' :
+                       apt.type === 'Follow-up' ? 'Suivi' :
+                       apt.type === 'Surgery' ? 'Chirurgie' :
+                       apt.type === 'Cancelled' ? 'Annulé' : apt.type}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -121,7 +124,10 @@ export default function SecretaryAppointmentsPage() {
                         }} 
                       />
                       <span className="text-[13px] font-normal text-text-primary">
-                        {apt.status}
+                        {apt.status === 'Confirmed' ? 'Confirmé' : 
+                         apt.status === 'Cancelled' ? 'Annulé' : 
+                         apt.status === 'Pending' ? 'En attente' : 
+                         apt.status === 'Completed' ? 'Terminé' : apt.status}
                       </span>
                     </div>
                   </td>

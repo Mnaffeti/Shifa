@@ -3,12 +3,12 @@ import { useAppointments } from '../context/AppointmentContext';
 import { useAuth } from '../context/AuthContext';
 
 const days = [
-  { day: 'Sun', date: 7 },
-  { day: 'Mon', date: 8 },
-  { day: 'Tue', date: 9 },
-  { day: 'Wed', date: 10, active: true },
-  { day: 'Thu', date: 11 },
-  { day: 'Fri', date: 12 },
+  { day: 'Dim', date: 7 },
+  { day: 'Lun', date: 8 },
+  { day: 'Mar', date: 9 },
+  { day: 'Mer', date: 10, active: true },
+  { day: 'Jeu', date: 11 },
+  { day: 'Ven', date: 12 },
 ];
 
 export default function RightPanel() {
@@ -28,7 +28,7 @@ export default function RightPanel() {
   return (
     <div className="bg-white rounded-[24px] p-6 shadow-card border border-border-subtle w-full max-w-[380px]">
       <h3 className="text-2xl font-bold text-text-primary leading-tight mb-8 tracking-tight">
-        Upcoming<br />Appointment
+        Prochains<br />rendez-vous
       </h3>
 
       {/* Calendar Strip */}
@@ -81,7 +81,7 @@ export default function RightPanel() {
             </div>
           ))
         ) : (
-          <p className="text-center py-4 text-text-muted font-medium">No appointments today</p>
+          <p className="text-center py-4 text-text-muted font-medium">Aucun rendez-vous aujourd'hui</p>
         )}
 
         {/* Add New Slot */}
@@ -97,7 +97,7 @@ export default function RightPanel() {
               <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
                 <Plus size={16} />
               </div>
-              <span className="text-[14px] font-bold text-text-muted group-hover:text-primary transition-colors">Add New Schedule</span>
+              <span className="text-[14px] font-bold text-text-muted group-hover:text-primary transition-colors">Ajouter un rendez-vous</span>
             </button>
           </div>
         )}

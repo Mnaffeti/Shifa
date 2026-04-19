@@ -15,10 +15,10 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const navItems: { icon: any; label: string; id: ViewType }[] = [
-    { icon: Home, label: 'Dashboard', id: 'dashboard' },
-    { icon: Calendar, label: 'Schedule', id: 'schedule' },
+    { icon: Home, label: 'Tableau de bord', id: 'dashboard' },
+    { icon: Calendar, label: 'Planning', id: 'schedule' },
     { icon: Users, label: 'Patients', id: 'patients' },
-    { icon: Settings, label: 'Settings', id: 'settings' },
+    { icon: Settings, label: 'Paramètres', id: 'settings' },
   ];
 
   return (
@@ -72,7 +72,7 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
             >
               <div className="hidden lg:block text-right">
                 <p className="text-xs font-bold text-text-primary leading-none mb-1">{user?.name}</p>
-                <p className="text-[10px] text-text-muted font-medium leading-none">{user?.specialty || 'Doctor'}</p>
+                <p className="text-[10px] text-text-muted font-medium leading-none">{user?.specialty || 'Médecin'}</p>
               </div>
               <div className="w-10 h-10 rounded-full border-2 border-accent overflow-hidden">
                 <img
@@ -97,11 +97,11 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
                   >
                     <button className="w-full px-4 py-2 text-left text-sm font-bold text-text-secondary hover:bg-bg-soft hover:text-primary transition-colors flex items-center gap-2">
                       <Users size={16} />
-                      Profile
+                      Profil
                     </button>
                     <button className="w-full px-4 py-2 text-left text-sm font-bold text-text-secondary hover:bg-bg-soft hover:text-primary transition-colors flex items-center gap-2">
                       <Settings size={16} />
-                      Settings
+                      Paramètres
                     </button>
                     <div className="h-px bg-border-subtle my-2" />
                     <button 
@@ -109,7 +109,7 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
                       className="w-full px-4 py-2 text-left text-sm font-bold text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"
                     >
                       <LogOut size={16} />
-                      Logout
+                      Déconnexion
                     </button>
                   </motion.div>
                 </>

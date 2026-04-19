@@ -23,7 +23,7 @@ export default function AppointmentTable() {
   return (
     <div className="bg-white rounded-[24px] shadow-card border border-border-subtle overflow-hidden flex flex-col">
       <div className="p-6 flex items-center justify-between border-b border-border-subtle">
-        <h3 className="text-2xl font-bold text-text-primary">Recent Appointments</h3>
+        <h3 className="text-2xl font-bold text-text-primary">Rendez-vous récents</h3>
         <button className="p-2 hover:bg-bg-soft rounded-full transition-colors">
           <MoreVertical size={20} className="text-text-muted" />
         </button>
@@ -34,12 +34,12 @@ export default function AppointmentTable() {
           <thead className="bg-[#F9FAFB] border-b border-border-subtle">
             <tr>
               <th className="px-6 py-4 table-header">Patient</th>
-              <th className="px-6 py-4 table-header">Doctor</th>
+              <th className="px-6 py-4 table-header">Médecin</th>
               <th className="px-6 py-4 table-header">Type</th>
               {user?.role === 'DOCTOR' && (
                 <th className="px-6 py-4 table-header text-center">Ordonnance</th>
               )}
-              <th className="px-6 py-4 table-header">Status</th>
+              <th className="px-6 py-4 table-header">Statut</th>
               <th className="px-6 py-4 table-header text-right">Actions</th>
             </tr>
           </thead>
@@ -75,7 +75,10 @@ export default function AppointmentTable() {
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-[13px] font-normal text-text-primary">
-                    {apt.type}
+                    {apt.type === 'Consultation' ? 'Consultation' :
+                     apt.type === 'Follow-up' ? 'Suivi' :
+                     apt.type === 'Surgery' ? 'Chirurgie' :
+                     apt.type === 'Cancelled' ? 'Annulé' : apt.type}
                   </span>
                 </td>
                 {user?.role === 'DOCTOR' && (
@@ -98,7 +101,10 @@ export default function AppointmentTable() {
                       }} 
                     />
                     <span className="text-[13px] font-normal text-text-primary">
-                      {apt.status}
+                      {apt.status === 'Completed' ? 'Terminé' : 
+                       apt.status === 'Confirmed' ? 'Confirmé' : 
+                       apt.status === 'Pending' ? 'En attente' : 
+                       apt.status === 'Cancelled' ? 'Annulé' : apt.status}
                     </span>
                   </div>
                 </td>

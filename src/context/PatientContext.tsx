@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export interface Patient {
   id: string;
@@ -28,38 +28,47 @@ interface PatientContextType {
 const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
 export function PatientProvider({ children }: { children: ReactNode }) {
-  const [patients, setPatients] = useState<Patient[]>([
-    {
-      id: 'PT-001',
-      firstName: 'Ahmed',
-      lastName: 'Mansour',
-      dob: '1985-05-15',
-      gender: 'Male',
-      phone: '123-456-7890',
-      email: 'ahmed.mansour@example.com',
-      address: '123 Main St, Tunis',
-      assignedDoctor: 'Dr. Renata Moeloek',
-      bloodType: 'A+',
-      status: 'Active',
-      lastVisit: '2024-04-10',
-      avatar: 'https://picsum.photos/seed/patient-ahmed/100/100'
-    },
-    {
-      id: 'PT-002',
-      firstName: 'Sarah',
-      lastName: 'Ben Ammar',
-      dob: '1992-08-22',
-      gender: 'Female',
-      phone: '098-765-4321',
-      email: 'sarah.ben@example.com',
-      address: '456 Oak Ave, Sousse',
-      assignedDoctor: 'Dr. Renata Moeloek',
-      bloodType: 'O-',
-      status: 'New',
-      lastVisit: '2024-04-12',
-      avatar: 'https://picsum.photos/seed/patient-sarah/100/100'
-    }
-  ]);
+  const [patients, setPatients] = useState<Patient[]>(() => {
+    const saved = localStorage.getItem('shifa_patients');
+    if (saved) return JSON.parse(saved);
+    
+    return [
+      {
+        id: 'PT-001',
+        firstName: 'Ahmed',
+        lastName: 'Mansour',
+        dob: '1985-05-15',
+        gender: 'Male',
+        phone: '123-456-7890',
+        email: 'ahmed.mansour@example.com',
+        address: '123 Main St, Tunis',
+        assignedDoctor: 'Dr. Youssef',
+        bloodType: 'A+',
+        status: 'Active',
+        lastVisit: '2024-04-10',
+        avatar: 'https://picsum.photos/seed/patient-ahmed/100/100'
+      },
+      {
+        id: 'PT-002',
+        firstName: 'Sarah',
+        lastName: 'Ben Ammar',
+        dob: '1992-08-22',
+        gender: 'Female',
+        phone: '098-765-4321',
+        email: 'sarah.ben@example.com',
+        address: '456 Oak Ave, Sousse',
+        assignedDoctor: 'Dr. Youssef',
+        bloodType: 'O-',
+        status: 'New',
+        lastVisit: '2024-04-12',
+        avatar: 'https://picsum.photos/seed/patient-sarah/100/100'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('shifa_patients', JSON.stringify(patients));
+  }, [patients]);
 
   const addPatient = (patient: Omit<Patient, 'id' | 'lastVisit' | 'avatar'>) => {
     const newPatient: Patient = {
