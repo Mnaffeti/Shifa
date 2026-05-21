@@ -1,29 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar as CalendarIcon, Clock, User, FileText, Trash2 } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppointments, Appointment, AppointmentType } from '../context/AppointmentContext';
 import { usePatients } from '../context/PatientContext';
 
-interface AppointmentFormModalProps {
+interface Props {
   isOpen: boolean;
   onClose: () => void;
   initialData?: Partial<Appointment>;
   isEdit?: boolean;
 }
 
-export default function AppointmentFormModal({ isOpen, onClose, initialData, isEdit }: AppointmentFormModalProps) {
+const DEFAULT_DURATION = 30;
+
+function addMinutes(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const hh = Math.floor(total / 60) % 24;
+  const mm = total % 60;
+  return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`;
+}
+
+export default function AppointmentFormModal({ isOpen, onClose, initialData, isEdit }: Props) {
   const { addAppointment, updateAppointment, deleteAppointment } = useAppointments();
   const { patients } = usePatients();
-  
+
   const [formData, setFormData] = useState<Partial<Appointment>>({
     patientId: '',
     patientName: '',
     doctor: 'Dr. Youssef',
     date: new Date().toISOString().split('T')[0],
     startTime: '09:00',
-    endTime: '10:00',
+    endTime: '09:30',
+    duration: DEFAULT_DURATION,
     type: 'Consultation',
-    status: 'Pending',
+    status: 'Confirmed',
     notes: ''
   });
 
@@ -32,6 +43,34 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
       setFormData(prev => ({ ...prev, ...initialData }));
     }
   }, [initialData, isOpen]);
+
+  const handleStartTimeChange = (startTime: string) => {
+    const duration = formData.duration || DEFAULT_DURATION;
+    setFormData(prev => ({
+      ...prev,
+      startTime,
+      endTime: addMinutes(startTime, duration)
+    }));
+  };
+
+  const handleDurationChange = (duration: number) => {
+    setFormData(prev => ({
+      ...prev,
+      duration,
+      endTime: addMinutes(prev.startTime || '09:00', duration)
+    }));
+  };
+
+  const handlePatientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const patient = patients.find(p => p.id === e.target.value);
+    if (patient) {
+      setFormData(prev => ({
+        ...prev,
+        patientId: patient.id,
+        patientName: `${patient.firstName} ${patient.lastName}`
+      }));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,16 +83,9 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
   };
 
   const handleDelete = () => {
-    if (initialData?.id && window.confirm('Are you sure you want to delete this appointment?')) {
+    if (initialData?.id && window.confirm('Supprimer ce rendez-vous ?')) {
       deleteAppointment(initialData.id);
       onClose();
-    }
-  };
-
-  const handlePatientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const patient = patients.find(p => p.id === e.target.value);
-    if (patient) {
-      setFormData({ ...formData, patientId: patient.id, patientName: `${patient.firstName} ${patient.lastName}` });
     }
   };
 
@@ -82,90 +114,81 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Patient</label>
+                <select
+                  value={formData.patientId}
+                  onChange={handlePatientChange}
+                  className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  required
+                >
+                  <option value="">Sélectionner un patient</option>
+                  {patients.map(p => (
+                    <option key={p.id} value={p.id}>{p.firstName} {p.lastName} ({p.id})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Type</label>
+                <select
+                  value={formData.type}
+                  onChange={e => setFormData(prev => ({ ...prev, type: e.target.value as AppointmentType }))}
+                  className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="Consultation">Consultation</option>
+                  <option value="Follow-up">Suivi</option>
+                  <option value="Surgery">Chirurgie</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Date</label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                  className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  required
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Patient</label>
-                  <select
-                    value={formData.patientId}
-                    onChange={handlePatientChange}
-                    className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    required
-                  >
-                    <option value="">Sélectionner un patient</option>
-                    {patients.map(p => (
-                      <option key={p.id} value={p.id}>{p.firstName} {p.lastName} ({p.id})</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Médecin</label>
-                  <select
-                    value={formData.doctor}
-                    onChange={(e) => setFormData({ ...formData, doctor: e.target.value })}
-                    className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="Dr. Youssef">Dr. Youssef</option>
-                    <option value="Dr. Aymen">Dr. Aymen</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Type</label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as AppointmentType })}
-                    className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="Consultation">Consultation</option>
-                    <option value="Follow-up">Suivi</option>
-                    <option value="Surgery">Chirurgie</option>
-                    <option value="Cancelled">Annulé</option>
-                  </select>
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    required
-                  />
-                </div>
-
                 <div>
                   <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Heure de début</label>
                   <input
                     type="time"
                     value={formData.startTime}
-                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    onChange={e => handleStartTimeChange(e.target.value)}
                     className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
                     required
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Heure de fin</label>
+                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Durée (min)</label>
                   <input
-                    type="time"
-                    value={formData.endTime}
-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    type="number"
+                    value={formData.duration}
+                    onChange={e => handleDurationChange(Number(e.target.value))}
                     className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    required
+                    min={5}
+                    step={5}
                   />
                 </div>
+              </div>
 
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Notes</label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[80px]"
-                    placeholder="Ajoutez des instructions spéciales..."
-                  />
-                </div>
+              <p className="text-xs text-text-muted font-medium">
+                Fin prévue : <span className="font-bold text-text-primary">{formData.endTime}</span>
+              </p>
+
+              <div>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Notes</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  className="w-full px-4 py-2 rounded-btn border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[80px]"
+                  placeholder="Instructions particulières..."
+                />
               </div>
 
               <div className="pt-4 flex gap-3">
@@ -191,7 +214,7 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                     type="submit"
                     className="flex-1 px-4 py-2 rounded-btn bg-accent text-primary font-bold shadow-md hover:brightness-110 transition-all active:scale-95"
                   >
-                    {isEdit ? 'Mettre à jour' : 'Enregistrer'} le rendez-vous
+                    {isEdit ? 'Mettre à jour' : 'Enregistrer'}
                   </button>
                 </div>
               </div>

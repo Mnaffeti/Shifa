@@ -1,27 +1,25 @@
-import React, { useState } from 'react';
-import { 
-  format, 
-  addMonths, 
-  subMonths, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  isSameMonth, 
-  isSameDay, 
-  addDays, 
+import { useState } from 'react';
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  isSameMonth,
+  isSameDay,
+  addDays,
   eachDayOfInterval,
-  startOfDay,
   addWeeks,
   subWeeks,
   isToday
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, User } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { ChevronLeft, ChevronRight, Plus, Clock, User } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useAppointments, Appointment, AppointmentType } from '../context/AppointmentContext';
 import AppointmentFormModal from '../components/AppointmentFormModal';
-
 import { useAuth } from '../context/AuthContext';
 
 type CalendarView = 'Month' | 'Week' | 'Day';
@@ -374,20 +372,59 @@ function WeekView({ currentDate, appointments, onAppointmentClick }: any) {
 }
 
 function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }: any) {
-  const hours = Array.from({ length: 13 }, (_, i) => i + 8); // 8 AM to 8 PM
-  const dayAppointments = appointments.filter((a: Appointment) => isSameDay(new Date(a.date), currentDate));
+  const { user } = useAuth();
+  const { markAsCompleted, currentPatientAptId, setCurrentPatientApt } = useAppointments();
+  const [rescheduleApt, setRescheduleApt] = useState<Appointment | undefined>(undefined);
+  const [isRescheduleOpen, setIsRescheduleOpen] = useState(false);
+
+  const hours = Array.from({ length: 13 }, (_, i) => i + 8);
+  const dayAppointments = appointments
+    .filter((a: Appointment) => isSameDay(new Date(a.date), currentDate))
+    .sort((a: Appointment, b: Appointment) => a.startTime.localeCompare(b.startTime));
+
+  const confirmedToday = dayAppointments.filter((a: Appointment) =>
+    a.status === 'Confirmed' || a.status === 'Pending'
+  );
+
+  const currentAptId = currentPatientAptId || (confirmedToday.length > 0 ? confirmedToday[0].id : null);
+  const currentIdx = confirmedToday.findIndex((a: Appointment) => a.id === currentAptId);
+  const nextApt = confirmedToday[currentIdx + 1] || null;
+
+  const handleMarkDone = (apt: Appointment) => {
+    markAsCompleted(apt.id);
+    const next = confirmedToday.find((a: Appointment) => a.id !== apt.id && a.status !== 'Completed');
+    setCurrentPatientApt(next?.id || null);
+  };
+
+  const handleReschedule = (apt: Appointment) => {
+    setRescheduleApt(apt);
+    setIsRescheduleOpen(true);
+  };
+
+  const TYPE_FR: Record<string, string> = {
+    'Consultation': 'Consultation',
+    'Follow-up': 'Suivi',
+    'Surgery': 'Chirurgie',
+    'Cancelled': 'Annulé'
+  };
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="p-8 border-b-[0.5px] border-border-subtle bg-[#F9FAFB] flex items-center gap-6">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
-            <span className="text-[10px] font-medium uppercase leading-none mb-1 tracking-[0.08em]">{format(currentDate, 'MMM', { locale: fr })}</span>
-            <span className="text-3xl font-semibold leading-none">{format(currentDate, 'd')}</span>
-          </div>
-          <div>
-            <h2 className="text-2xl font-medium text-text-primary tracking-tight">{format(currentDate, 'EEEE', { locale: fr })}</h2>
-            <p className="text-sm font-normal text-text-secondary">Vous avez {dayAppointments.length} rendez-vous prévus</p>
-          </div>
+        <div className="w-16 h-16 bg-primary rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
+          <span className="text-[10px] font-medium uppercase leading-none mb-1 tracking-[0.08em]">
+            {format(currentDate, 'MMM', { locale: fr })}
+          </span>
+          <span className="text-3xl font-semibold leading-none">{format(currentDate, 'd')}</span>
+        </div>
+        <div>
+          <h2 className="text-2xl font-medium text-text-primary tracking-tight">
+            {format(currentDate, 'EEEE', { locale: fr })}
+          </h2>
+          <p className="text-sm font-normal text-text-secondary">
+            {dayAppointments.length} rendez-vous · {confirmedToday.length} à venir
+          </p>
+        </div>
       </div>
 
       <div className="flex-1 p-8">
@@ -395,8 +432,8 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
           {hours.map(hour => {
             const timeStr = `${hour.toString().padStart(2, '0')}:00`;
             return (
-              <div 
-                key={hour} 
+              <div
+                key={hour}
                 className="group flex gap-8 h-24 border-b-[0.5px] border-border-subtle last:border-b-0 cursor-pointer"
                 onClick={() => onSlotClick(timeStr)}
               >
@@ -406,7 +443,6 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
                   </span>
                 </div>
                 <div className="flex-1 relative group-hover:bg-[#F5F5F5] transition-colors rounded-xl">
-                  {/* Appointments for this hour */}
                   {dayAppointments
                     .filter((a: Appointment) => {
                       const [h] = a.startTime.split(':').map(Number);
@@ -416,55 +452,88 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
                       const [startH, startM] = apt.startTime.split(':').map(Number);
                       const [endH, endM] = apt.endTime.split(':').map(Number);
                       const top = (startM / 60) * 96;
-                      const height = ((endH * 60 + endM) - (startH * 60 + startM)) / 60 * 96;
+                      const height = Math.max(
+                        ((endH * 60 + endM) - (startH * 60 + startM)) / 60 * 96,
+                        56
+                      );
+
+                      const isCurrent = apt.id === currentAptId;
+                      const isNext = nextApt?.id === apt.id;
 
                       return (
                         <div
                           key={apt.id}
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             onAppointmentClick(apt);
                           }}
-                          className="absolute left-2 right-2 rounded-2xl p-4 shadow-md border border-white/20 cursor-pointer flex items-center justify-between transition-all hover:scale-[1.01] z-10"
-                          style={{ 
-                            top: `${top}px`, 
-                            height: `${height}px`, 
+                          className={`absolute left-2 right-2 rounded-2xl p-3 shadow-md border cursor-pointer flex items-center justify-between z-10 transition-all ${
+                            isCurrent ? 'border-primary/40 ring-2 ring-primary/20' :
+                            isNext ? 'border-accent/40' : 'border-white/20'
+                          } ${apt.status === 'Completed' ? 'opacity-50' : ''}`}
+                          style={{
+                            top: `${top}px`,
+                            height: `${height}px`,
                             backgroundColor: TYPE_COLORS[apt.type].bg,
                             color: TYPE_COLORS[apt.type].text
                           }}
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center">
-                              <User size={20} />
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-white/30 flex items-center justify-center shrink-0">
+                              <User size={18} />
                             </div>
                             <div>
-                              <p className="text-[10px] font-medium uppercase opacity-70 mb-0.5 tracking-[0.08em]">
-                                {apt.type === 'Consultation' ? 'Consultation' :
-                                 apt.type === 'Follow-up' ? 'Suivi' :
-                                 apt.type === 'Surgery' ? 'Chirurgie' :
-                                 apt.type === 'Cancelled' ? 'Annulé' : apt.type}
-                              </p>
-                              <p className="text-[13px] font-medium">{apt.patientName}</p>
-                              <div className="flex items-center gap-2 text-[11px] font-medium">
-                                <Clock size={12} />
-                                {apt.startTime} - {apt.endTime}
+                              <div className="flex items-center gap-2 mb-0.5">
+                                {isCurrent && apt.status !== 'Completed' && (
+                                  <span className="text-[9px] font-bold uppercase tracking-wider bg-primary text-white px-1.5 py-0.5 rounded-full">
+                                    En cours
+                                  </span>
+                                )}
+                                {isNext && (
+                                  <span className="text-[9px] font-bold uppercase tracking-wider bg-black/10 px-1.5 py-0.5 rounded-full">
+                                    Suivant
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[12px] font-medium">{apt.patientName}</p>
+                              <div className="flex items-center gap-1 text-[10px] font-medium opacity-80">
+                                <Clock size={10} />
+                                {apt.startTime} – {apt.endTime}
+                                {apt.duration && <span className="ml-1">({apt.duration} min)</span>}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-1.5 h-1.5 rounded-full" 
-                              style={{ 
-                                backgroundColor: apt.status === 'Completed' ? '#1A6B5A' : '#2B7FBF' 
-                              }} 
-                            />
-                            <span className="text-[10px] font-medium uppercase tracking-[0.08em]">
-                              {apt.status === 'Completed' ? 'Terminé' : 
-                               apt.status === 'Confirmed' ? 'Confirmé' : 
-                               apt.status === 'Pending' ? 'En attente' : 
-                               apt.status === 'Cancelled' ? 'Annulé' : apt.status}
-                            </span>
-                          </div>
+
+                          {user?.role === 'DOCTOR' && isCurrent && apt.status !== 'Completed' && (
+                            <div className="flex flex-col gap-1 shrink-0 ml-2" onClick={e => e.stopPropagation()}>
+                              <button
+                                onClick={() => handleMarkDone(apt)}
+                                className="px-3 py-1 bg-accent text-primary text-[10px] font-bold rounded-full hover:brightness-110 transition-all whitespace-nowrap"
+                              >
+                                Terminer
+                              </button>
+                              <button
+                                onClick={() => handleReschedule(apt)}
+                                className="px-3 py-1 bg-white/40 text-current text-[10px] font-bold rounded-full hover:bg-white/60 transition-all whitespace-nowrap"
+                              >
+                                Reprogrammer
+                              </button>
+                            </div>
+                          )}
+
+                          {(user?.role !== 'DOCTOR' || !isCurrent) && (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <div
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: apt.status === 'Completed' ? '#1A6B5A' : '#2B7FBF' }}
+                              />
+                              <span className="text-[10px] font-medium uppercase tracking-[0.08em]">
+                                {apt.status === 'Completed' ? 'Terminé' :
+                                 apt.status === 'Confirmed' ? 'Confirmé' :
+                                 apt.status === 'Cancelled' ? 'Annulé' : 'En attente'}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -474,6 +543,13 @@ function DayView({ currentDate, appointments, onSlotClick, onAppointmentClick }:
           })}
         </div>
       </div>
+
+      <AppointmentFormModal
+        isOpen={isRescheduleOpen}
+        onClose={() => setIsRescheduleOpen(false)}
+        initialData={rescheduleApt}
+        isEdit
+      />
     </div>
   );
 }
