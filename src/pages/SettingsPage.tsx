@@ -4,15 +4,16 @@ import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 
 export default function SettingsPage() {
-  const { doctor } = useAuth();
-  const [activeSection, setActiveSection] = useState('Profil');
+  const { doctor, user } = useAuth();
+  const isSecretary = user?.role === 'SECRETARY';
+  const [activeSection, setActiveSection] = useState(isSecretary ? 'Notifications' : 'Profil');
 
   const sections = [
-    { id: 'Profil', icon: User, label: 'Profil' },
-    { id: 'Notifications', icon: Bell, label: 'Notifications' },
-    { id: 'Working Hours', icon: Clock, label: 'Horaires' },
-    { id: 'Security', icon: Shield, label: 'Sécurité' },
-  ];
+    { id: 'Profil', icon: User, label: 'Profil', secretaryVisible: false },
+    { id: 'Notifications', icon: Bell, label: 'Notifications', secretaryVisible: true },
+    { id: 'Working Hours', icon: Clock, label: 'Horaires', secretaryVisible: true },
+    { id: 'Security', icon: Shield, label: 'Sécurité', secretaryVisible: true },
+  ].filter(s => !isSecretary || s.secretaryVisible);
 
   return (
     <div className="flex flex-col gap-6">

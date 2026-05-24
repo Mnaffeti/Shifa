@@ -5,6 +5,7 @@ import { usePatients, Patient } from '../context/PatientContext';
 import { useAppointments } from '../context/AppointmentContext';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
+import AppointmentFormModal from '../components/AppointmentFormModal';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
@@ -316,6 +317,7 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
 function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => void }) {
   const [activeTab, setActiveTab] = useState('Info');
+  const [isRdvModalOpen, setIsRdvModalOpen] = useState(false);
   const { appointments } = useAppointments();
   const patientAppointments = appointments.filter(a => a.patientId === patient.id);
 
@@ -437,6 +439,15 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
 
             {activeTab === 'Appointments' && (
               <div className="space-y-4">
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setIsRdvModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-accent text-primary font-bold rounded-pill text-sm shadow-sm hover:brightness-110 transition-all active:scale-95"
+                  >
+                    <Plus size={16} />
+                    Ajouter un RDV
+                  </button>
+                </div>
                 {patientAppointments.length > 0 ? (
                   patientAppointments.map(apt => (
                     <div key={apt.id} className="flex items-center justify-between p-4 bg-bg-soft rounded-2xl border border-border-subtle">
@@ -492,6 +503,15 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
           </div>
         </div>
       </div>
+
+      <AppointmentFormModal
+        isOpen={isRdvModalOpen}
+        onClose={() => setIsRdvModalOpen(false)}
+        initialData={{
+          patientId: patient.id,
+          patientName: `${patient.firstName} ${patient.lastName}`
+        }}
+      />
     </div>
   );
 }

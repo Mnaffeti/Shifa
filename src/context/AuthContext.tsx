@@ -21,14 +21,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const ACCOUNTS = [
   {
-    email: 'secretary@medica.com',
+    email: 'secretary@shifa.com',
     password: 'secretary123',
-    name: 'Sophie Martin',
+    name: 'Foulena',
     role: 'SECRETARY' as UserRole,
     avatar: 'https://picsum.photos/seed/secretary-sophie/100/100'
   },
   {
-    email: 'doctor@medica.com',
+    email: 'doctor@shifa.com',
     password: 'doctor123',
     name: 'Dr. Youssef',
     role: 'DOCTOR' as UserRole,

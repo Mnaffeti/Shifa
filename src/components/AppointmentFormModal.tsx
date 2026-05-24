@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2 } from 'lucide-react';
+import { X, Trash2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppointments, Appointment, AppointmentType } from '../context/AppointmentContext';
 import { usePatients } from '../context/PatientContext';
@@ -21,9 +21,15 @@ function addMinutes(time: string, minutes: number): string {
   return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`;
 }
 
+function toMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
 export default function AppointmentFormModal({ isOpen, onClose, initialData, isEdit }: Props) {
-  const { addAppointment, updateAppointment, deleteAppointment } = useAppointments();
+  const { addAppointment, updateAppointment, deleteAppointment, appointments } = useAppointments();
   const { patients } = usePatients();
+  const [conflict, setConflict] = useState<Appointment | null>(null);
 
   const [formData, setFormData] = useState<Partial<Appointment>>({
     patientId: '',
@@ -42,7 +48,27 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
     if (initialData) {
       setFormData(prev => ({ ...prev, ...initialData }));
     }
+    setConflict(null);
   }, [initialData, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !formData.date || !formData.startTime || !formData.endTime) {
+      setConflict(null);
+      return;
+    }
+    const newStart = toMinutes(formData.startTime);
+    const newEnd = toMinutes(formData.endTime);
+    const found = appointments.find(apt => {
+      if (apt.status === 'Cancelled' || apt.status === 'Completed') return false;
+      if (isEdit && apt.id === initialData?.id) return false;
+      if (apt.date !== formData.date) return false;
+      if (apt.doctor !== formData.doctor) return false;
+      const aptStart = toMinutes(apt.startTime);
+      const aptEnd = toMinutes(apt.endTime);
+      return newStart < aptEnd && newEnd > aptStart;
+    });
+    setConflict(found ?? null);
+  }, [isOpen, appointments, formData.date, formData.startTime, formData.endTime, formData.doctor]);
 
   const handleStartTimeChange = (startTime: string) => {
     const duration = formData.duration || DEFAULT_DURATION;
@@ -74,6 +100,7 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (conflict) return;
     if (isEdit && initialData?.id) {
       updateAppointment(initialData.id, formData);
     } else {
@@ -181,6 +208,15 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                 Fin prévue : <span className="font-bold text-text-primary">{formData.endTime}</span>
               </p>
 
+              {conflict && (
+                <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                  <AlertTriangle size={16} className="shrink-0 mt-0.5 text-red-500" />
+                  <span>
+                    <span className="font-bold">Créneau déjà réservé</span> — {conflict.patientName} a un RDV de {conflict.startTime} à {conflict.endTime}.
+                  </span>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Notes</label>
                 <textarea
@@ -212,7 +248,8 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 rounded-btn bg-accent text-primary font-bold shadow-md hover:brightness-110 transition-all active:scale-95"
+                    disabled={!!conflict}
+                    className="flex-1 px-4 py-2 rounded-btn bg-accent text-primary font-bold shadow-md hover:brightness-110 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                   >
                     {isEdit ? 'Mettre à jour' : 'Enregistrer'}
                   </button>

@@ -5,8 +5,8 @@ import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('doctor@shifa.com');
+  const [password, setPassword] = useState('doctor123');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -24,10 +24,10 @@ export default function LoginPage() {
   const setCredentials = (role: 'SECRETARY' | 'DOCTOR') => {
     setSelectedRole(role);
     if (role === 'SECRETARY') {
-      setEmail('secretary@medica.com');
+      setEmail('secretary@shifa.com');
       setPassword('secretary123');
     } else {
-      setEmail('doctor@medica.com');
+      setEmail('doctor@shifa.com');
       setPassword('doctor123');
     }
   };
@@ -43,7 +43,7 @@ export default function LoginPage() {
         <div className="bg-white rounded-[32px] shadow-2xl border border-white/20 p-8 lg:p-12 relative overflow-hidden">
           {/* Decorative background element inside card */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-          
+
           <div className="relative z-10">
             {/* Logo */}
             <div className="flex items-center gap-2 mb-8 justify-center">
@@ -64,8 +64,8 @@ export default function LoginPage() {
               <button
                 onClick={() => setCredentials('DOCTOR')}
                 className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
-                  selectedRole === 'DOCTOR' 
-                    ? 'bg-white text-primary shadow-sm' 
+                  selectedRole === 'DOCTOR'
+                    ? 'bg-white text-primary shadow-sm'
                     : 'text-text-muted hover:text-text-primary'
                 }`}
               >
@@ -74,8 +74,8 @@ export default function LoginPage() {
               <button
                 onClick={() => setCredentials('SECRETARY')}
                 className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
-                  selectedRole === 'SECRETARY' 
-                    ? 'bg-white text-primary shadow-sm' 
+                  selectedRole === 'SECRETARY'
+                    ? 'bg-white text-primary shadow-sm'
                     : 'text-text-muted hover:text-text-primary'
                 }`}
               >
@@ -84,7 +84,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 text-sm font-bold rounded-xl flex items-center gap-3"
@@ -161,7 +161,7 @@ export default function LoginPage() {
             </form>
           </div>
         </div>
-        
+
         <p className="text-center mt-8 text-text-secondary text-sm font-medium">
           Vous n'avez pas de compte ? <a href="#" className="text-primary font-bold hover:underline">Contacter l'administrateur</a>
         </p>

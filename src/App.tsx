@@ -74,7 +74,7 @@ function MainLayout() {
       <AppointmentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
       <footer className="py-8 px-8 text-center text-text-muted text-xs font-medium">
-        © 2024 ShifaPlus Hospital Management System. All rights reserved.
+        © 2026 ShifaPlus Hospital Management System. All rights reserved.
       </footer>
     </div>
   );

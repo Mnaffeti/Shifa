@@ -1,4 +1,4 @@
-import { Search, Filter, Download, Plus, X, Edit2, Clock } from 'lucide-react';
+import { Search, Download, Plus, X, Edit2, Clock } from 'lucide-react';
 import { useAppointments } from '../context/AppointmentContext';
 import { useState } from 'react';
 
@@ -12,7 +12,7 @@ const TYPE_FR: Record<string, string> = {
 export default function SecretaryAppointmentsPage() {
   const { appointments, cancelAppointment, setIsModalOpen } = useAppointments();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('Confirmed');
 
   const filteredAppointments = appointments
     .filter(apt => {
@@ -59,7 +59,7 @@ export default function SecretaryAppointmentsPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
           <input
@@ -71,17 +71,24 @@ export default function SecretaryAppointmentsPage() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="text-text-muted" size={16} />
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="bg-white border border-border-subtle rounded-pill px-4 py-2.5 text-sm font-bold text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary/20"
-          >
-            <option value="All">Tous</option>
-            <option value="Confirmed">Confirmé</option>
-            <option value="Completed">Terminé</option>
-            <option value="Cancelled">Annulé</option>
-          </select>
+          {[
+            { value: 'Confirmed', label: 'En attente' },
+            { value: 'Completed', label: 'Terminé' },
+            { value: 'Cancelled', label: 'Annulé' },
+            { value: 'All', label: 'Voir tout' },
+          ].map(f => (
+            <button
+              key={f.value}
+              onClick={() => setStatusFilter(f.value)}
+              className={`px-4 py-2 rounded-pill text-sm font-bold transition-all border ${
+                statusFilter === f.value
+                  ? 'bg-primary text-white border-primary shadow-sm'
+                  : 'bg-white text-text-secondary border-border-subtle hover:border-primary/40 hover:text-primary'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       </div>
 

@@ -40,6 +40,7 @@ export default function DoctorDashboard() {
           <PatientDetailOverlay
             appointment={activeAppointment}
             onClose={() => setActiveAppointment(null)}
+            onNavigate={setActiveAppointment}
           />
         )}
       </AnimatePresence>
