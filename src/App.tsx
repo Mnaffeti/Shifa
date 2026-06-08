@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppointmentProvider, useAppointments } from './context/AppointmentContext';
 import { PatientProvider } from './context/PatientContext';
+import { ChartProvider } from './context/ChartContext';
+import { ConsultationProvider } from './context/ConsultationContext';
 
 // Components
 import Navbar from './components/Navbar';
@@ -88,11 +90,15 @@ function AppContent() {
   }
 
   return (
-    <PatientProvider>
-      <AppointmentProvider>
-        <MainLayout />
-      </AppointmentProvider>
-    </PatientProvider>
+    <ChartProvider>
+      <ConsultationProvider>
+        <PatientProvider>
+          <AppointmentProvider>
+            <MainLayout />
+          </AppointmentProvider>
+        </PatientProvider>
+      </ConsultationProvider>
+    </ChartProvider>
   );
 }
 

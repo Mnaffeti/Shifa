@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus, CheckCircle2 } from 'lucide-react';
 import { useAppointments, Appointment } from '../context/AppointmentContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,7 +27,7 @@ export default function RightPanel({ onPatientClick }: Props) {
     : appointments;
 
   const todayAppointments = filteredAppointments
-    .filter(a => a.date === todayStr && a.status !== 'Cancelled' && a.status !== 'Completed')
+    .filter(a => a.date === todayStr && a.status !== 'Cancelled')
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   const days = WEEK_DAYS.map(({ day, offset }) => {
@@ -63,9 +63,11 @@ export default function RightPanel({ onPatientClick }: Props) {
 
       <div className="flex flex-col gap-4">
         {todayAppointments.length > 0 ? (
-          todayAppointments.slice(0, 3).map((apt, index) => {
-            const isNext = index === 0;
-            const isClickable = isNext && user?.role === 'DOCTOR' && onPatientClick;
+          todayAppointments.slice(0, 4).map((apt, index) => {
+            const isDone = apt.status === 'Completed';
+            const pending = todayAppointments.filter(a => a.status !== 'Completed');
+            const isNext = !isDone && apt.id === pending[0]?.id;
+            const isClickable = user?.role === 'DOCTOR' && onPatientClick && (isNext || isDone);
 
             return (
               <div key={apt.id} className="flex items-center gap-4">
@@ -81,15 +83,25 @@ export default function RightPanel({ onPatientClick }: Props) {
                       Prochain patient
                     </span>
                   )}
+                  {isDone && (
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-green-600 flex items-center gap-1">
+                      <CheckCircle2 size={9} />
+                      Consulté
+                    </span>
+                  )}
                   <button
-                    onClick={() => isClickable && onPatientClick(apt)}
+                    onClick={() => isClickable && onPatientClick!(apt)}
                     disabled={!isClickable}
-                    className={`h-[64px] rounded-pill relative flex items-center pl-14 pr-4 shadow-sm w-full text-left transition-all ${
-                      isNext ? 'hover:brightness-95 cursor-pointer ring-2 ring-primary/20' : 'cursor-default'
+                    className={`h-[56px] rounded-pill relative flex items-center pl-14 pr-4 shadow-sm w-full text-left transition-all ${
+                      isDone
+                        ? 'opacity-60 hover:opacity-80 cursor-pointer'
+                        : isNext
+                        ? 'hover:brightness-95 cursor-pointer ring-2 ring-primary/20'
+                        : 'cursor-default'
                     }`}
-                    style={{ backgroundColor: isNext ? '#FFCF44' : '#3DD6D0' }}
+                    style={{ backgroundColor: isDone ? '#E5E7EB' : isNext ? '#FFCF44' : '#3DD6D0' }}
                   >
-                    <div className="absolute left-[-4px] w-[48px] h-[48px] rounded-full border-[3px] border-white overflow-hidden shadow-md">
+                    <div className="absolute left-[-4px] w-[44px] h-[44px] rounded-full border-[3px] border-white overflow-hidden shadow-md">
                       <img
                         src={`https://picsum.photos/seed/patient-${apt.patientName.toLowerCase().replace(/\s+/g, '-')}/48/48`}
                         alt="Patient"
@@ -97,10 +109,10 @@ export default function RightPanel({ onPatientClick }: Props) {
                       />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-base font-bold text-primary leading-none mb-1 truncate max-w-[180px]">
+                      <span className={`text-sm font-bold leading-none mb-1 truncate max-w-[180px] ${isDone ? 'text-text-secondary' : 'text-primary'}`}>
                         {apt.patientName}
                       </span>
-                      <span className="text-sm font-bold text-primary/60 leading-none tabular">
+                      <span className={`text-xs font-bold leading-none tabular ${isDone ? 'text-text-muted' : 'text-primary/60'}`}>
                         {apt.startTime} - {apt.endTime}
                       </span>
                     </div>

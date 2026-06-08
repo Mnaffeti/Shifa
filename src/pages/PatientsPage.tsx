@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Search, Plus, Eye, Trash2, ChevronLeft, Phone, Mail, MapPin, Droplets, X, FileText, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePatients, Patient } from '../context/PatientContext';
-import { useAppointments } from '../context/AppointmentContext';
+import { useAppointments, Appointment } from '../context/AppointmentContext';
 import { useAuth } from '../context/AuthContext';
+import { useConsultations } from '../context/ConsultationContext';
 import { format } from 'date-fns';
 import AppointmentFormModal from '../components/AppointmentFormModal';
+import PatientDetailOverlay from '../components/PatientDetailOverlay';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
@@ -318,8 +320,12 @@ function AddPatientModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => void }) {
   const [activeTab, setActiveTab] = useState('Info');
   const [isRdvModalOpen, setIsRdvModalOpen] = useState(false);
+  const [overlayAppointment, setOverlayAppointment] = useState<Appointment | null>(null);
   const { appointments } = useAppointments();
-  const patientAppointments = appointments.filter(a => a.patientId === patient.id);
+  const { findByAppointment } = useConsultations();
+  const patientAppointments = appointments
+    .filter(a => a.patientId === patient.id)
+    .sort((a, b) => b.date.localeCompare(a.date));
 
   const TYPE_FR: Record<string, string> = {
     'Consultation': 'Consultation',
@@ -449,35 +455,53 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
                   </button>
                 </div>
                 {patientAppointments.length > 0 ? (
-                  patientAppointments.map(apt => (
-                    <div key={apt.id} className="flex items-center justify-between p-4 bg-bg-soft rounded-2xl border border-border-subtle">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white rounded-xl flex flex-col items-center justify-center shadow-sm">
-                          <span className="text-[10px] font-bold text-text-muted uppercase leading-none mb-1">
-                            {format(new Date(apt.date), 'MMM')}
-                          </span>
-                          <span className="text-lg font-black text-primary leading-none">
-                            {format(new Date(apt.date), 'd')}
-                          </span>
+                  patientAppointments.map(apt => {
+                    const consultation = findByAppointment(apt.id);
+                    const hasSigned = consultation?.status === 'signed';
+                    return (
+                      <div
+                        key={apt.id}
+                        onClick={() => hasSigned && setOverlayAppointment(apt)}
+                        className={`flex items-center justify-between p-4 bg-bg-soft rounded-2xl border border-border-subtle transition-all ${
+                          hasSigned ? 'cursor-pointer hover:border-primary/30 hover:shadow-sm hover:bg-white' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-white rounded-xl flex flex-col items-center justify-center shadow-sm">
+                            <span className="text-[10px] font-bold text-text-muted uppercase leading-none mb-1">
+                              {format(new Date(apt.date), 'MMM')}
+                            </span>
+                            <span className="text-lg font-black text-primary leading-none">
+                              {format(new Date(apt.date), 'd')}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-text-primary">{TYPE_FR[apt.type] || apt.type}</p>
+                            <p className="text-xs text-text-secondary font-medium">{apt.doctor} · {apt.startTime}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold text-text-primary">{TYPE_FR[apt.type] || apt.type}</p>
-                          <p className="text-xs text-text-secondary font-medium">{apt.doctor} · {apt.startTime}</p>
+                        <div className="flex items-center gap-3">
+                          {hasSigned && (
+                            <div className="flex items-center gap-1 text-primary">
+                              <Eye size={13} />
+                              <span className="text-[11px] font-bold">Voir</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ backgroundColor: apt.status === 'Completed' ? '#1A6B5A' : '#2B7FBF' }}
+                            />
+                            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-primary">
+                              {apt.status === 'Completed' ? 'Terminé' :
+                               apt.status === 'Confirmed' ? 'Confirmé' :
+                               apt.status === 'Cancelled' ? 'Annulé' : 'En attente'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: apt.status === 'Completed' ? '#1A6B5A' : '#2B7FBF' }}
-                        />
-                        <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-text-primary">
-                          {apt.status === 'Completed' ? 'Terminé' :
-                           apt.status === 'Confirmed' ? 'Confirmé' :
-                           apt.status === 'Cancelled' ? 'Annulé' : 'En attente'}
-                        </span>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="text-center py-12 text-text-muted font-medium">Aucun rendez-vous trouvé.</p>
                 )}
@@ -512,6 +536,15 @@ function PatientProfile({ patient, onBack }: { patient: Patient; onBack: () => v
           patientName: `${patient.firstName} ${patient.lastName}`
         }}
       />
+
+      <AnimatePresence>
+        {overlayAppointment && (
+          <PatientDetailOverlay
+            appointment={overlayAppointment}
+            onClose={() => setOverlayAppointment(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
