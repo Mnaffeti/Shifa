@@ -30,6 +30,7 @@ export interface Consultation {
     assessment: string;
     plan: string;
   };
+  diagnoses: string[];
   constantes?: Vitals;
   ordonnance: {
     items: OrdonnanceItem[];
@@ -47,6 +48,7 @@ interface ConsultationContextType {
   getOrCreateDraft: (appointmentId: string, patientId: string, doctor: string, date: string) => void;
   updateConsultation: (id: string, fields: Partial<Consultation>) => void;
   updateSoap: (id: string, key: keyof Consultation['soap'], value: string) => void;
+  updateDiagnoses: (id: string, diagnoses: string[]) => void;
   updateOrdonnance: (id: string, items: OrdonnanceItem[]) => void;
   updateConstantes: (id: string, constantes: Vitals) => void;
   signConsultation: (id: string, doctor: string) => void;
@@ -73,6 +75,7 @@ const SEED: Consultation[] = [
       assessment: 'I10 — Hypertension artérielle mal contrôlée\nE11.9 — Diabète de type 2 stable\nR51 — Céphalées à évaluer',
       plan: 'Ajustement thérapeutique : augmentation Amlodipine 5→10 mg/j.\nContrôle tensionnel à J+15.\nBilan biologique : HbA1c, créatinine, ionogramme, bilan lipidique.\nRDV cardiologue si pas d\'amélioration à 1 mois.\nRégime hyposodé rappelé.',
     },
+    diagnoses: ['Hypertension artérielle', 'Diabète de type 2', 'Céphalées'],
     constantes: { date: '2024-04-10', weight: 83, height: 175, bp: '148/92', hr: 82, temp: 36.9, spo2: 97 },
     ordonnance: {
       items: [
@@ -98,6 +101,7 @@ const SEED: Consultation[] = [
       assessment: 'I10 — HTA équilibrée sous traitement\nE11.9 — Diabète type 2 bien contrôlé',
       plan: 'Maintien du traitement en cours. Renouvellement 3 mois.\nHbA1c à 3 mois. Rappel activité physique 30 min/jour.',
     },
+    diagnoses: ['Hypertension artérielle', 'Diabète de type 2'],
     constantes: { date: '2024-02-15', weight: 82, bp: '132/84', hr: 74, temp: 36.7, spo2: 98 },
     ordonnance: {
       items: [
@@ -116,7 +120,11 @@ const SEED: Consultation[] = [
 export function ConsultationProvider({ children }: { children: ReactNode }) {
   const [consultations, setConsultations] = useState<Consultation[]>(() => {
     const saved = localStorage.getItem('shifa_consultations');
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed: Consultation[] = JSON.parse(saved);
+      // Backfill diagnoses for records saved before this field existed
+      return parsed.map(c => c.diagnoses ? c : { ...c, diagnoses: [] });
+    }
     return SEED;
   });
 
@@ -136,6 +144,7 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
       date,
       doctor,
       soap: { subjectif: '', objectif: '', assessment: '', plan: '' },
+      diagnoses: [],
       ordonnance: { items: [] },
       status: 'draft',
       addenda: [],
@@ -152,6 +161,12 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
   const updateSoap = (id: string, key: keyof Consultation['soap'], value: string) => {
     setConsultations(prev =>
       prev.map(c => (c.id === id ? { ...c, soap: { ...c.soap, [key]: value } } : c))
+    );
+  };
+
+  const updateDiagnoses = (id: string, diagnoses: string[]) => {
+    setConsultations(prev =>
+      prev.map(c => (c.id === id ? { ...c, diagnoses } : c))
     );
   };
 
@@ -210,6 +225,7 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
       getOrCreateDraft,
       updateConsultation,
       updateSoap,
+      updateDiagnoses,
       updateOrdonnance,
       updateConstantes,
       signConsultation,

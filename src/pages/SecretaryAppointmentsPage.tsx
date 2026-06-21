@@ -1,6 +1,7 @@
 import { Search, Download, Plus, X, Edit2, Clock } from 'lucide-react';
-import { useAppointments } from '../context/AppointmentContext';
+import { useAppointments, Appointment } from '../context/AppointmentContext';
 import { useState } from 'react';
+import AppointmentFormModal from '../components/AppointmentFormModal';
 
 const TYPE_FR: Record<string, string> = {
   'Consultation': 'Consultation',
@@ -13,6 +14,7 @@ export default function SecretaryAppointmentsPage() {
   const { appointments, cancelAppointment, setIsModalOpen } = useAppointments();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('Confirmed');
+  const [editingApt, setEditingApt] = useState<Appointment | null>(null);
 
   const filteredAppointments = appointments
     .filter(apt => {
@@ -92,6 +94,13 @@ export default function SecretaryAppointmentsPage() {
         </div>
       </div>
 
+      <AppointmentFormModal
+        isOpen={!!editingApt}
+        onClose={() => setEditingApt(null)}
+        initialData={editingApt ?? undefined}
+        isEdit
+      />
+
       <div className="flex flex-col gap-3">
         {filteredAppointments.length === 0 ? (
           <div className="bg-white rounded-[24px] shadow-card border border-border-subtle p-12 text-center">
@@ -144,6 +153,7 @@ export default function SecretaryAppointmentsPage() {
                 {!isDone && !isCancelled && (
                   <div className="flex items-center gap-2 shrink-0">
                     <button
+                      onClick={() => setEditingApt(apt)}
                       className="p-2.5 rounded-xl hover:bg-bg-soft transition-colors text-text-muted hover:text-primary"
                       title="Modifier"
                     >

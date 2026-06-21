@@ -2,6 +2,7 @@ import { Search, Bell, Home, LayoutGrid, Calendar, Users, Settings, LogOut, Chev
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
+import NavbarClock from './NavbarClock';
 
 export type ViewType = 'dashboard' | 'schedule' | 'patients' | 'settings';
 
@@ -22,11 +23,11 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
   ];
 
   return (
-    <nav className="h-16 bg-white shadow-sm border-b border-border-subtle sticky top-0 z-50">
-      <div className="max-w-[1600px] mx-auto w-full h-full flex items-center justify-between px-8">
+    <nav className="h-20 bg-white shadow-sm border-b border-border-subtle sticky top-0 z-50">
+      <div className="max-w-[1600px] mx-auto w-full h-full flex items-center justify-between px-10 gap-8">
         {/* Logo */}
-        <div 
-          className="flex items-center gap-2 cursor-pointer" 
+        <div
+          className="flex items-center gap-3 cursor-pointer shrink-0"
           onClick={() => onViewChange('dashboard')}
         >
           <div className="relative w-8 h-8">
@@ -37,7 +38,7 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
         </div>
 
         {/* Nav Items */}
-        <div className="hidden md:flex items-center gap-1 bg-accent/20 backdrop-blur-md p-1 rounded-pill border border-accent/30 shadow-sm">
+        <div className="hidden md:flex items-center gap-1.5 bg-accent/20 backdrop-blur-md p-1.5 rounded-pill border border-accent/30 shadow-sm">
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -55,20 +56,28 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
         </div>
 
         {/* Right Icons */}
-        <div className="flex items-center gap-4">
-          <button className="p-2.5 text-text-secondary bg-white/30 backdrop-blur-md border border-white/40 rounded-full hover:bg-white/50 hover:text-primary transition-all shadow-sm">
-            <Search size={20} />
-          </button>
-          <button className="p-2.5 text-text-secondary bg-white/30 backdrop-blur-md border border-white/40 rounded-full hover:bg-white/50 hover:text-primary transition-all shadow-sm relative">
-            <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-          </button>
-          
+        <div className="flex items-center gap-5 shrink-0">
+          <NavbarClock />
+
+          <div className="hidden md:block h-7 w-px bg-border-subtle" />
+
+          <div className="flex items-center gap-3">
+            <button className="p-2.5 text-text-secondary bg-white/30 backdrop-blur-md border border-white/40 rounded-full hover:bg-white/50 hover:text-primary transition-all shadow-sm">
+              <Search size={20} />
+            </button>
+            <button className="p-2.5 text-text-secondary bg-white/30 backdrop-blur-md border border-white/40 rounded-full hover:bg-white/50 hover:text-primary transition-all shadow-sm relative">
+              <Bell size={20} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+            </button>
+          </div>
+
+          <div className="hidden md:block h-7 w-px bg-border-subtle" />
+
           {/* Profile Dropdown */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-pill hover:bg-bg-soft transition-all group"
+              className="flex items-center gap-3 pl-3 pr-2 py-1.5 rounded-pill hover:bg-bg-soft transition-all group"
             >
               <div className="hidden lg:block text-right">
                 <p className="text-xs font-bold text-text-primary leading-none mb-1">{user?.name}</p>

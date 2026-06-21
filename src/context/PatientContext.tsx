@@ -14,11 +14,12 @@ export interface Patient {
   status: 'Active' | 'New' | 'Inactive';
   lastVisit: string;
   avatar: string;
+  createdAt: string;
 }
 
 interface PatientContextType {
   patients: Patient[];
-  addPatient: (patient: Omit<Patient, 'id' | 'lastVisit' | 'avatar'>) => void;
+  addPatient: (patient: Omit<Patient, 'id' | 'lastVisit' | 'avatar' | 'createdAt'>) => void;
   updatePatient: (id: string, patient: Partial<Patient>) => void;
   deletePatient: (id: string) => void;
   totalPatients: number;
@@ -30,8 +31,12 @@ const PatientContext = createContext<PatientContextType | undefined>(undefined);
 export function PatientProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<Patient[]>(() => {
     const saved = localStorage.getItem('shifa_patients');
-    if (saved) return JSON.parse(saved);
-    
+    if (saved) {
+      const parsed: Patient[] = JSON.parse(saved);
+      // Backfill createdAt for existing patients that don't have it
+      return parsed.map(p => p.createdAt ? p : { ...p, createdAt: p.lastVisit !== 'Never' ? p.lastVisit : new Date().toISOString().split('T')[0] });
+    }
+
     return [
       {
         id: 'PT-001',
@@ -46,7 +51,8 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         bloodType: 'A+',
         status: 'Active',
         lastVisit: '2024-04-10',
-        avatar: 'https://picsum.photos/seed/patient-ahmed/100/100'
+        avatar: 'https://picsum.photos/seed/patient-ahmed/100/100',
+        createdAt: '2024-04-10'
       },
       {
         id: 'PT-002',
@@ -61,7 +67,8 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         bloodType: 'O-',
         status: 'New',
         lastVisit: '2024-04-12',
-        avatar: 'https://picsum.photos/seed/patient-sarah/100/100'
+        avatar: 'https://picsum.photos/seed/patient-sarah/100/100',
+        createdAt: '2024-04-12'
       }
     ];
   });
@@ -70,13 +77,14 @@ export function PatientProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('shifa_patients', JSON.stringify(patients));
   }, [patients]);
 
-  const addPatient = (patient: Omit<Patient, 'id' | 'lastVisit' | 'avatar'>) => {
+  const addPatient = (patient: Omit<Patient, 'id' | 'lastVisit' | 'avatar' | 'createdAt'>) => {
     const newPatient: Patient = {
       ...patient,
       id: `PT-${(patients.length + 1).toString().padStart(3, '0')}`,
       lastVisit: 'Never',
       avatar: `https://picsum.photos/seed/patient-${patient.firstName.toLowerCase()}-${patient.lastName.toLowerCase()}/100/100`,
-      status: 'New'
+      status: 'New',
+      createdAt: new Date().toISOString().split('T')[0]
     };
     setPatients(prev => [newPatient, ...prev]);
   };
@@ -90,10 +98,10 @@ export function PatientProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <PatientContext.Provider value={{ 
-      patients, 
-      addPatient, 
-      updatePatient, 
+    <PatientContext.Provider value={{
+      patients,
+      addPatient,
+      updatePatient,
       deletePatient,
       totalPatients: patients.length,
       activePatients: patients.filter(p => p.status === 'Active').length

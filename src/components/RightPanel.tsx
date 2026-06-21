@@ -37,111 +37,108 @@ export default function RightPanel({ onPatientClick }: Props) {
   });
 
   return (
-    <div className="bg-white rounded-[24px] p-6 shadow-card border border-border-subtle w-full max-w-[380px]">
-      <h3 className="text-2xl font-bold text-text-primary leading-tight mb-8 tracking-tight">
-        Prochains<br />rendez-vous
-      </h3>
+    <div className="bg-white rounded-[24px] p-6 shadow-card border border-border-subtle w-full max-w-[380px] hover-card">
+      <div className="flex items-baseline justify-between mb-6">
+        <h3 className="text-xl font-medium text-text-primary leading-tight tracking-tight">
+          Prochains rendez-vous
+        </h3>
+        <span className="text-[11px] font-medium text-text-muted uppercase tracking-widest tabular">
+          {todayAppointments.length} aujourd'hui
+        </span>
+      </div>
 
-      <div className="flex justify-between mb-10">
+      <div className="flex justify-between mb-8 px-1">
         {days.map((d) => (
-          <div key={d.date} className="flex flex-col items-center">
-            <span className={`text-lg font-bold mb-1 ${d.active ? 'text-white' : 'text-text-primary'}`}>
-              {d.active ? (
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-md">
-                  {d.date}
-                </div>
-              ) : (
-                d.date
-              )}
-            </span>
-            <span className={`text-xs font-bold uppercase tracking-widest ${d.active ? 'text-primary' : 'text-text-muted'}`}>
+          <div key={d.date} className="flex flex-col items-center gap-1.5">
+            {d.active ? (
+              <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-white tabular">{d.date}</span>
+              </div>
+            ) : (
+              <div className="w-9 h-9 flex items-center justify-center">
+                <span className="text-sm font-medium text-text-primary tabular">{d.date}</span>
+              </div>
+            )}
+            <span className={`text-[10px] font-medium uppercase tracking-widest ${d.active ? 'text-primary' : 'text-text-muted/70'}`}>
               {d.day}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2.5">
         {todayAppointments.length > 0 ? (
-          todayAppointments.slice(0, 4).map((apt, index) => {
+          todayAppointments.slice(0, 4).map((apt) => {
             const isDone = apt.status === 'Completed';
             const pending = todayAppointments.filter(a => a.status !== 'Completed');
             const isNext = !isDone && apt.id === pending[0]?.id;
             const isClickable = user?.role === 'DOCTOR' && onPatientClick && (isNext || isDone);
 
             return (
-              <div key={apt.id} className="flex items-center gap-4">
-                <div className="w-[52px] text-right shrink-0">
-                  <p className="text-xs font-bold text-text-muted leading-tight tabular">
-                    {apt.startTime.split(':')[0]}.{apt.startTime.split(':')[1]}<br />
-                    {parseInt(apt.startTime.split(':')[0]) >= 12 ? 'PM' : 'AM'}
-                  </p>
+              <button
+                key={apt.id}
+                onClick={() => isClickable && onPatientClick!(apt)}
+                disabled={!isClickable}
+                className={`group w-full text-left flex items-center gap-3 p-3 rounded-2xl border transition-all duration-200 ${
+                  isNext
+                    ? 'border-accent/60 bg-gradient-to-r from-accent/20 to-accent/5 hover:from-accent/30 hover:-translate-y-0.5 cursor-pointer'
+                    : isDone
+                    ? 'border-emerald-200 bg-emerald-50/60 hover:bg-emerald-50 cursor-pointer'
+                    : 'border-teal-200 bg-teal-50/50 hover:bg-teal-50 cursor-default'
+                }`}
+              >
+                <div className={`w-11 h-11 rounded-full overflow-hidden shrink-0 ring-2 ${
+                  isNext ? 'ring-accent' : isDone ? 'ring-emerald-300' : 'ring-teal-300'
+                }`}>
+                  <img
+                    src={`https://picsum.photos/seed/patient-${apt.patientName.toLowerCase().replace(/\s+/g, '-')}/48/48`}
+                    alt=""
+                    className={isDone ? 'grayscale opacity-80' : ''}
+                    referrerPolicy="no-referrer"
+                  />
                 </div>
-                <div className="flex-1 flex flex-col gap-1">
-                  {isNext && (
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                      Prochain patient
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className={`text-sm font-medium truncate ${isDone ? 'text-emerald-900' : isNext ? 'text-primary' : 'text-text-primary'}`}>
+                      {apt.patientName}
                     </span>
-                  )}
-                  {isDone && (
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-green-600 flex items-center gap-1">
-                      <CheckCircle2 size={9} />
-                      Consulté
-                    </span>
-                  )}
-                  <button
-                    onClick={() => isClickable && onPatientClick!(apt)}
-                    disabled={!isClickable}
-                    className={`h-[56px] rounded-pill relative flex items-center pl-14 pr-4 shadow-sm w-full text-left transition-all ${
-                      isDone
-                        ? 'opacity-60 hover:opacity-80 cursor-pointer'
-                        : isNext
-                        ? 'hover:brightness-95 cursor-pointer ring-2 ring-primary/20'
-                        : 'cursor-default'
-                    }`}
-                    style={{ backgroundColor: isDone ? '#E5E7EB' : isNext ? '#FFCF44' : '#3DD6D0' }}
-                  >
-                    <div className="absolute left-[-4px] w-[44px] h-[44px] rounded-full border-[3px] border-white overflow-hidden shadow-md">
-                      <img
-                        src={`https://picsum.photos/seed/patient-${apt.patientName.toLowerCase().replace(/\s+/g, '-')}/48/48`}
-                        alt="Patient"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className={`text-sm font-bold leading-none mb-1 truncate max-w-[180px] ${isDone ? 'text-text-secondary' : 'text-primary'}`}>
-                        {apt.patientName}
+                    {isNext && (
+                      <span className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary text-accent text-[9px] font-medium uppercase tracking-widest">
+                        <span className="w-1 h-1 rounded-full bg-accent pulse-accent" />
+                        Prochain
                       </span>
-                      <span className={`text-xs font-bold leading-none tabular ${isDone ? 'text-text-muted' : 'text-primary/60'}`}>
-                        {apt.startTime} - {apt.endTime}
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] tabular">
+                    <span className={isNext ? 'text-primary/70' : isDone ? 'text-emerald-700' : 'text-text-muted'}>{apt.startTime}</span>
+                    <span className="text-text-muted/40">—</span>
+                    <span className={isNext ? 'text-primary/70' : isDone ? 'text-emerald-700' : 'text-text-muted'}>{apt.endTime}</span>
+                    {isDone && (
+                      <span className="ml-1 inline-flex items-center gap-1 text-emerald-600">
+                        <CheckCircle2 size={10} strokeWidth={2} />
+                        Consulté
                       </span>
-                    </div>
-                  </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </button>
             );
           })
         ) : (
-          <p className="text-center py-4 text-text-muted font-medium">Aucun rendez-vous aujourd'hui</p>
+          <div className="py-8 text-center">
+            <p className="text-sm text-text-muted font-medium">Aucun rendez-vous aujourd'hui</p>
+          </div>
         )}
 
         {user?.role === 'SECRETARY' && (
-          <div className="flex items-center gap-4">
-            <div className="w-[52px] text-right shrink-0">
-              <p className="text-[12px] font-bold text-text-muted leading-tight">--.--<br />--</p>
-            </div>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex-1 h-[64px] bg-[#F3F4F6] rounded-pill flex items-center px-6 gap-3 hover:bg-bg-soft transition-colors group"
-            >
-              <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
-                <Plus size={16} />
-              </div>
-              <span className="text-[14px] font-bold text-text-muted group-hover:text-primary transition-colors">
-                Ajouter un rendez-vous
-              </span>
-            </button>
-          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="mt-2 flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-border-subtle text-text-muted hover:border-accent hover:bg-accent/10 hover:text-primary transition-all duration-200 group"
+          >
+            <Plus size={15} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-sm font-medium">Ajouter un rendez-vous</span>
+          </button>
         )}
       </div>
     </div>

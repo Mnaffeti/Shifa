@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import SidebarStats from '../components/SidebarStats';
 import RightPanel from '../components/RightPanel';
 import DashboardCharts from '../components/DashboardCharts';
-import PatientDetailOverlay from '../components/PatientDetailOverlay';
+import ConsultationPage from '../components/ConsultationPage';
 import { useAuth } from '../context/AuthContext';
 import { Appointment } from '../context/AppointmentContext';
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
+
+  const today = format(new Date(), "EEEE d MMMM yyyy", { locale: fr });
 
   return (
     <>
@@ -19,11 +23,15 @@ export default function DoctorDashboard() {
         </div>
 
         <div className="flex flex-col gap-8 min-w-0">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-bold text-text-primary font-heading leading-tight tracking-tight">
-              Bonjour, {user?.name} 👋
+          <div className="flex flex-col gap-1.5">
+            <p className="inline-flex items-center gap-2 text-[11px] font-medium text-text-muted uppercase tracking-widest tabular">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent pulse-accent" />
+              {today}
+            </p>
+            <h1 className="text-3xl font-medium text-text-primary font-heading leading-tight tracking-tight">
+              Bonjour, {user?.name}
             </h1>
-            <p className="text-base font-medium text-text-secondary">
+            <p className="text-sm font-medium text-text-muted">
               Voici un aperçu de votre journée.
             </p>
           </div>
@@ -37,7 +45,7 @@ export default function DoctorDashboard() {
 
       <AnimatePresence>
         {activeAppointment && (
-          <PatientDetailOverlay
+          <ConsultationPage
             appointment={activeAppointment}
             onClose={() => setActiveAppointment(null)}
             onNavigate={setActiveAppointment}
