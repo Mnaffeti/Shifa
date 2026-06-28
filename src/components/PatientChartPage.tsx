@@ -3,10 +3,10 @@ import {
   ChevronLeft, Plus, X, Trash2, Calendar, Stethoscope,
   AlertTriangle, Activity, Heart, Scale, Thermometer, Waves, Ruler,
   Pill, ClipboardList, StickyNote, Paperclip, Upload, FileText,
-  ScanLine, Image as ImageIcon,
+  ScanLine, Image as ImageIcon, Users, Pencil, Check,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Patient } from '../context/PatientContext';
+import { Patient, usePatients } from '../context/PatientContext';
 import { useAuth } from '../context/AuthContext';
 import { useChart, Attachment } from '../context/ChartContext';
 import { useConsultations } from '../context/ConsultationContext';
@@ -112,6 +112,7 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
   } = useChart();
   const { getPatientConsultations } = useConsultations();
   const { appointments } = useAppointments();
+  const { updatePatient } = usePatients();
 
   const chart = getChart(patient.id);
   const consultations = getPatientConsultations(patient.id).filter(c => c.status === 'signed');
@@ -128,6 +129,34 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
   const [medDraft, setMedDraft] = useState({ name: '', dosage: '', frequency: '' });
   const [preview, setPreview] = useState<Attachment | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Parent / guardian inline editor
+  const [editingParent, setEditingParent] = useState(false);
+  const [parentDraft, setParentDraft] = useState({
+    parentFirstName: patient.parentFirstName ?? '',
+    parentLastName: patient.parentLastName ?? '',
+    parentComments: patient.parentComments ?? '',
+  });
+
+  const openParentEditor = () => {
+    setParentDraft({
+      parentFirstName: patient.parentFirstName ?? '',
+      parentLastName: patient.parentLastName ?? '',
+      parentComments: patient.parentComments ?? '',
+    });
+    setEditingParent(true);
+  };
+
+  const saveParent = () => {
+    updatePatient(patient.id, {
+      parentFirstName: parentDraft.parentFirstName.trim(),
+      parentLastName: parentDraft.parentLastName.trim(),
+      parentComments: parentDraft.parentComments.trim(),
+    });
+    setEditingParent(false);
+  };
+
+  const hasParent = !!(patient.parentFirstName || patient.parentLastName || patient.parentComments);
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
@@ -190,6 +219,8 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
               {[
                 ['Âge', `${calcAge(patient.dob)} ans`],
                 ['Genre', patient.gender],
+                ['CIN', patient.cin || '—'],
+                ['Profession', patient.profession || '—'],
                 ['Groupe sanguin', patient.bloodType],
                 ['Téléphone', patient.phone || '—'],
               ].map(([k, val]) => (
@@ -201,10 +232,81 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
             </div>
           </div>
 
-          {/* Medical alerts */}
+          {/* Parent / Tuteur */}
+          <SectionCard
+            icon={Users}
+            title="Parent / Tuteur"
+            action={canEdit && !editingParent && (
+              <button
+                onClick={openParentEditor}
+                className="w-7 h-7 flex items-center justify-center rounded-full border border-border-subtle text-text-muted hover:text-primary hover:border-primary/40 transition-all"
+                title={hasParent ? 'Modifier' : 'Ajouter un parent / tuteur'}
+              >
+                {hasParent ? <Pencil size={13} /> : <Plus size={14} />}
+              </button>
+            )}
+          >
+            {editingParent ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    autoFocus
+                    value={parentDraft.parentFirstName}
+                    onChange={e => setParentDraft(d => ({ ...d, parentFirstName: e.target.value }))}
+                    placeholder="Prénom"
+                    className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <input
+                    value={parentDraft.parentLastName}
+                    onChange={e => setParentDraft(d => ({ ...d, parentLastName: e.target.value }))}
+                    placeholder="Nom"
+                    className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <textarea
+                  value={parentDraft.parentComments}
+                  onChange={e => setParentDraft(d => ({ ...d, parentComments: e.target.value }))}
+                  placeholder="Commentaires (lien de parenté, contact, remarques...)"
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={saveParent}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition-all"
+                  >
+                    <Check size={15} /> Enregistrer
+                  </button>
+                  <button
+                    onClick={() => setEditingParent(false)}
+                    className="p-2 rounded-xl border border-border-subtle text-text-muted hover:bg-bg-soft transition-all shrink-0"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            ) : hasParent ? (
+              <div className="space-y-2">
+                {(patient.parentFirstName || patient.parentLastName) && (
+                  <p className="text-sm font-medium text-text-primary">
+                    {[patient.parentFirstName, patient.parentLastName].filter(Boolean).join(' ')}
+                  </p>
+                )}
+                {patient.parentComments && (
+                  <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
+                    {patient.parentComments}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted">Aucun parent / tuteur.</p>
+            )}
+          </SectionCard>
+
+          {/* Antécédents */}
           <SectionCard
             icon={AlertTriangle}
-            title="Alertes médicales"
+            title="Antécédents"
             action={canEdit && (
               <button
                 onClick={() => setAddingAlert(v => !v)}
@@ -216,7 +318,7 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
           >
             <div className="space-y-2">
               {chart.alertes.length === 0 && !addingAlert && (
-                <p className="text-xs text-text-muted">Aucune alerte.</p>
+                <p className="text-xs text-text-muted">Aucun antécédent.</p>
               )}
               {chart.alertes.map(a => (
                 <div
@@ -237,7 +339,7 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
               ))}
               {addingAlert && (
                 <InlineAdd
-                  placeholder="Nouvelle alerte..."
+                  placeholder="Nouvel antécédent..."
                   onAdd={label => { addAlerte(patient.id, label); }}
                   onCancel={() => setAddingAlert(false)}
                 />

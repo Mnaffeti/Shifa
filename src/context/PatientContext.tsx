@@ -9,6 +9,11 @@ export interface Patient {
   phone: string;
   email: string;
   address: string;
+  profession: string;
+  cin: string;
+  parentFirstName?: string;
+  parentLastName?: string;
+  parentComments?: string;
   assignedDoctor: string;
   bloodType: string;
   status: 'Active' | 'New' | 'Inactive';
@@ -47,6 +52,8 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         phone: '123-456-7890',
         email: 'ahmed.mansour@example.com',
         address: '123 Main St, Tunis',
+        profession: 'Ingénieur',
+        cin: '08123456',
         assignedDoctor: 'Dr. Youssef',
         bloodType: 'A+',
         status: 'Active',
@@ -63,6 +70,8 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         phone: '098-765-4321',
         email: 'sarah.ben@example.com',
         address: '456 Oak Ave, Sousse',
+        profession: 'Enseignante',
+        cin: '09234567',
         assignedDoctor: 'Dr. Youssef',
         bloodType: 'O-',
         status: 'New',

@@ -393,11 +393,11 @@ export default function ConsultationPage({ appointment, onClose, onNavigate }: P
             {/* Medical alerts */}
             <div className="bg-white rounded-[20px] shadow-card border border-border-subtle p-5 hover-card">
               <p className="text-[10px] font-medium text-text-muted uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                <AlertTriangle size={11} strokeWidth={1.75} /> Alertes médicales
+                <AlertTriangle size={11} strokeWidth={1.75} /> Antécédents
               </p>
               <div className="space-y-2">
                 {chart.allergies.length === 0 && chart.alertes.length === 0 && (
-                  <p className="text-xs text-text-muted">Aucune alerte.</p>
+                  <p className="text-xs text-text-muted">Aucun antécédent.</p>
                 )}
                 {chart.allergies.map(a => (
                   <div key={a.id} className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-200">

@@ -48,6 +48,7 @@ export default function PatientsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [rowMenu, setRowMenu] = useState<{ patient: Patient; x: number; y: number } | null>(null);
 
   const canAddOrEdit = user?.role === 'SECRETARY' || user?.role === 'DOCTOR';
 
@@ -184,7 +185,11 @@ export default function PatientsPage() {
             </thead>
             <tbody className="divide-y divide-border-subtle">
               {filteredPatients.map(p => (
-                <tr key={p.id} className="hover:bg-bg-soft/30 transition-colors group">
+                <tr
+                  key={p.id}
+                  onClick={e => setRowMenu({ patient: p, x: e.clientX, y: e.clientY })}
+                  className="hover:bg-bg-soft/30 transition-colors group cursor-pointer"
+                >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-border-subtle">
@@ -215,7 +220,7 @@ export default function PatientsPage() {
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right" onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => setSelectedPatient(p)}
@@ -251,6 +256,40 @@ export default function PatientsPage() {
         </div>
       )}
 
+      {/* Row click mini popover */}
+      <AnimatePresence>
+        {rowMenu && (
+          <>
+            <div className="fixed inset-0 z-[90]" onClick={() => setRowMenu(null)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: -4 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                top: Math.min(rowMenu.y + 8, window.innerHeight - 80),
+                left: Math.min(rowMenu.x, window.innerWidth - 240),
+              }}
+              className="fixed z-[95] w-56 bg-white border border-border-subtle rounded-2xl shadow-xl overflow-hidden"
+            >
+              <div className="px-4 py-3 border-b border-border-subtle">
+                <p className="text-sm font-bold text-text-primary truncate">
+                  {rowMenu.patient.firstName} {rowMenu.patient.lastName}
+                </p>
+                <p className="text-[11px] font-medium text-text-muted tabular">{rowMenu.patient.id}</p>
+              </div>
+              <button
+                onClick={() => { setSelectedPatient(rowMenu.patient); setRowMenu(null); }}
+                className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-text-secondary hover:bg-accent/15 hover:text-primary transition-colors"
+              >
+                <Eye size={16} />
+                Ouvrir la fiche patient
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Add modal */}
       <PatientFormModal
         isOpen={isAddModalOpen}
@@ -279,6 +318,8 @@ type FormData = {
   phone: string;
   email: string;
   address: string;
+  profession: string;
+  cin: string;
   assignedDoctor: string;
   bloodType: string;
 };
@@ -291,6 +332,8 @@ const EMPTY_FORM: FormData = {
   phone: '',
   email: '',
   address: '',
+  profession: '',
+  cin: '',
   assignedDoctor: 'Dr. Youssef',
   bloodType: 'A+'
 };
@@ -304,9 +347,43 @@ function patientToForm(p: Patient): FormData {
     phone: p.phone,
     email: p.email,
     address: p.address,
+    profession: p.profession || '',
+    cin: p.cin || '',
     assignedDoctor: p.assignedDoctor,
     bloodType: p.bloodType
   };
+}
+
+// ─── Date input helpers (DD/MM/YYYY) ────────────────────────────────────────
+
+/** Convert stored ISO (YYYY-MM-DD) to display format DD/MM/YYYY. */
+function isoToFr(iso: string): string {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+
+/** Mask raw keystrokes into DD/MM/YYYY: keep digits only, auto-insert slashes. */
+function maskDateFr(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
+
+/** Validate a DD/MM/YYYY string. Returns an error message, or '' when valid. */
+function validateDateFr(val: string): string {
+  const m = val.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return 'Format invalide (JJ/MM/AAAA)';
+  const day = +m[1], month = +m[2], year = +m[3];
+  if (month < 1 || month > 12) return 'Mois invalide (01–12)';
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (day < 1 || day > daysInMonth) return `Jour invalide (01–${daysInMonth})`;
+  if (year < 1900) return 'Année invalide';
+  const date = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date > today) return 'La date ne peut pas être dans le futur';
+  return '';
 }
 
 interface PatientFormModalProps {
@@ -321,19 +398,45 @@ function PatientFormModal({ isOpen, onClose, mode, patient }: PatientFormModalPr
   const [formData, setFormData] = useState<FormData>(
     mode === 'edit' && patient ? patientToForm(patient) : EMPTY_FORM
   );
+  // Display value for the date field (DD/MM/YYYY); formData.dob stays ISO.
+  const [dobInput, setDobInput] = useState(
+    mode === 'edit' && patient ? isoToFr(patient.dob) : ''
+  );
+  const [dobError, setDobError] = useState('');
 
   // Sync when the patient prop changes (different patient opened for edit)
   React.useEffect(() => {
     if (isOpen) {
-      setFormData(mode === 'edit' && patient ? patientToForm(patient) : EMPTY_FORM);
+      const init = mode === 'edit' && patient ? patientToForm(patient) : EMPTY_FORM;
+      setFormData(init);
+      setDobInput(init.dob ? isoToFr(init.dob) : '');
+      setDobError('');
     }
   }, [isOpen, patient, mode]);
 
   const set = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
 
+  const handleDobChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const masked = maskDateFr(e.target.value);
+    setDobInput(masked);
+    const err = masked.length === 10 ? validateDateFr(masked) : '';
+    setDobError(err);
+    if (!err && masked.length === 10) {
+      const [d, mo, y] = masked.split('/');
+      setFormData(prev => ({ ...prev, dob: `${y}-${mo}-${d}` }));
+    } else {
+      setFormData(prev => ({ ...prev, dob: '' }));
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const err = validateDateFr(dobInput);
+    if (err) {
+      setDobError(err);
+      return;
+    }
     if (mode === 'add') {
       addPatient(formData);
     } else if (patient) {
@@ -414,29 +517,23 @@ function PatientFormModal({ isOpen, onClose, mode, patient }: PatientFormModalPr
                 </label>
                 <input
                   type="text"
-                  value={formData.dob}
-                  onChange={e => {
-                    // Allow only digits and dashes, enforce DD/MM/YYYY → stored as YYYY-MM-DD
-                    setFormData(prev => ({ ...prev, dob: e.target.value }));
-                  }}
-                  onBlur={e => {
-                    // Parse and normalise to YYYY-MM-DD on blur
-                    const val = e.target.value.trim();
-                    // Accept YYYY-MM-DD or DD/MM/YYYY
-                    const dmyMatch = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-                    if (dmyMatch) {
-                      const [, d, m, y] = dmyMatch;
-                      setFormData(prev => ({
-                        ...prev,
-                        dob: `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
-                      }));
-                    }
-                  }}
-                  placeholder="DD/MM/YYYY"
+                  inputMode="numeric"
+                  value={dobInput}
+                  onChange={handleDobChange}
+                  onBlur={() => setDobError(dobInput ? validateDateFr(dobInput) : '')}
+                  placeholder="JJ/MM/AAAA"
                   maxLength={10}
-                  className="w-full px-4 py-2.5 rounded-xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  aria-invalid={!!dobError}
+                  className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-2 ${
+                    dobError
+                      ? 'border-red-400 focus:ring-red-200'
+                      : 'border-border-subtle focus:ring-primary/20'
+                  }`}
                   required
                 />
+                {dobError && (
+                  <p className="mt-1 text-xs font-medium text-red-500">{dobError}</p>
+                )}
               </div>
 
               {/* Genre */}
@@ -482,6 +579,29 @@ function PatientFormModal({ isOpen, onClose, mode, patient }: PatientFormModalPr
                   type="text"
                   value={formData.address}
                   onChange={set('address')}
+                  className="w-full px-4 py-2.5 rounded-xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* CIN — numéro carte d'identité */}
+              <div>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">CIN (N° carte d'identité)</label>
+                <input
+                  type="text"
+                  value={formData.cin}
+                  onChange={set('cin')}
+                  inputMode="numeric"
+                  className="w-full px-4 py-2.5 rounded-xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Profession */}
+              <div>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Profession</label>
+                <input
+                  type="text"
+                  value={formData.profession}
+                  onChange={set('profession')}
                   className="w-full px-4 py-2.5 rounded-xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
