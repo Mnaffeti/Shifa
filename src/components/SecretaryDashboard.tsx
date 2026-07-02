@@ -1,7 +1,11 @@
-import { Calendar, UserPlus, XCircle, Plus, X, Edit2, Clock } from 'lucide-react';
-import { useAppointments } from '../context/AppointmentContext';
+import { useState } from 'react';
+import { Calendar, UserPlus, XCircle, Plus, X, Edit2, Clock, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useAppointments, Appointment } from '../context/AppointmentContext';
 import { usePatients } from '../context/PatientContext';
 import StatCard from './StatCard';
+import AppointmentFormModal from './AppointmentFormModal';
+import RemindersSection from './RemindersSection';
 
 const TYPE_FR: Record<string, string> = {
   'Consultation': 'Consultation',
@@ -13,6 +17,16 @@ const TYPE_FR: Record<string, string> = {
 export default function SecretaryDashboard() {
   const { appointments, cancelAppointment, setIsModalOpen } = useAppointments();
   const { patients } = usePatients();
+
+  const [editingApt, setEditingApt] = useState<Appointment | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
+
+  const handleConfirmCancel = () => {
+    if (cancelTarget) {
+      cancelAppointment(cancelTarget.id);
+      setCancelTarget(null);
+    }
+  };
 
   const today = new Date().toISOString().split('T')[0];
   const todayAppointments = appointments
@@ -118,13 +132,14 @@ export default function SecretaryDashboard() {
                 {!isDone && (
                   <div className="flex items-center gap-3 shrink-0">
                     <button
+                      onClick={() => setEditingApt(apt)}
                       className="p-3 rounded-xl hover:bg-bg-soft transition-colors text-text-muted hover:text-primary"
                       title="Modifier"
                     >
                       <Edit2 size={20} />
                     </button>
                     <button
-                      onClick={() => cancelAppointment(apt.id)}
+                      onClick={() => setCancelTarget(apt)}
                       className="p-3 rounded-xl hover:bg-red-50 transition-colors text-text-muted hover:text-red-500"
                       title="Annuler"
                     >
@@ -137,6 +152,63 @@ export default function SecretaryDashboard() {
           })}
         </div>
       )}
+
+      <RemindersSection />
+
+      <AppointmentFormModal
+        isOpen={!!editingApt}
+        onClose={() => setEditingApt(null)}
+        initialData={editingApt ?? undefined}
+        isEdit
+      />
+
+      <AnimatePresence>
+        {cancelTarget && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setCancelTarget(null)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="p-6 flex flex-col items-center text-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+                  <AlertTriangle size={28} className="text-red-500" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-text-primary">Annuler le rendez-vous ?</h2>
+                  <p className="text-text-secondary font-medium mt-1">
+                    Le rendez-vous de <span className="font-bold text-text-primary">{cancelTarget.patientName}</span> à{' '}
+                    <span className="font-bold text-text-primary">{cancelTarget.startTime}</span> sera annulé.
+                    Cette action peut être retrouvée dans les rendez-vous annulés.
+                  </p>
+                </div>
+                <div className="flex gap-3 w-full pt-2">
+                  <button
+                    onClick={() => setCancelTarget(null)}
+                    className="flex-1 px-4 py-2.5 rounded-btn border border-border-subtle font-bold text-text-secondary hover:bg-bg-soft transition-colors"
+                  >
+                    Retour
+                  </button>
+                  <button
+                    onClick={handleConfirmCancel}
+                    className="flex-1 px-4 py-2.5 rounded-btn bg-red-500 text-white font-bold shadow-md hover:brightness-110 transition-all active:scale-95"
+                  >
+                    Annuler le RDV
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

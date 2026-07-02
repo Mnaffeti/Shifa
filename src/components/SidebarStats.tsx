@@ -1,43 +1,62 @@
-import { Activity, Heart, UserPlus, Users } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Hourglass, LogOut } from 'lucide-react';
 import StatCard from './StatCard';
 import { useAppointments } from '../context/AppointmentContext';
-import { usePatients } from '../context/PatientContext';
+
+/** Latest endTime ("HH:MM") among a list of appointments, or '' when empty. */
+function latestEndTime(apts: { endTime: string }[]): string {
+  return apts.reduce((max, a) => (a.endTime > max ? a.endTime : max), '');
+}
 
 export default function SidebarStats() {
-  const { totalAppointments, recoveryRate } = useAppointments();
-  const { patients } = usePatients();
+  const { appointments } = useAppointments();
 
-  const newPatients = patients.filter(p => p.status === 'New').length;
+  const today = new Date().toISOString().split('T')[0];
+  const todayApts = appointments.filter(a => a.date === today && a.status !== 'Cancelled');
+
+  const total = todayApts.length;
+  const done = todayApts.filter(a => a.status === 'Completed').length;
+  const waiting = todayApts.filter(a => a.status === 'Confirmed' || a.status === 'Pending').length;
+  const donePct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  // Estimated end of the working day: the latest end time still ahead of us;
+  // once everything is done, fall back to the last appointment's end time.
+  const remaining = todayApts.filter(a => a.status !== 'Completed');
+  const estimatedEnd =
+    remaining.length > 0
+      ? latestEndTime(remaining)
+      : total > 0
+        ? latestEndTime(todayApts)
+        : '—';
+  const allDone = total > 0 && waiting === 0;
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-[280px]">
       <StatCard
-        icon={Users}
-        label="Rendez-vous totaux"
-        value={totalAppointments.toLocaleString()}
-        update="+5.2%"
+        icon={CalendarDays}
+        label="RDV du jour"
+        value={total.toLocaleString()}
+        update="aujourd'hui"
         tone="teal"
       />
       <StatCard
-        icon={UserPlus}
-        label="Nouveaux Patients"
-        value={newPatients.toLocaleString()}
-        update="+3"
+        icon={CheckCircle2}
+        label="RDV terminés"
+        value={done.toLocaleString()}
+        update={total > 0 ? `${donePct}%` : undefined}
         tone="lime"
       />
       <StatCard
-        icon={Activity}
-        label="Cas Actifs"
-        value={patients.filter(p => p.status === 'Active').length.toLocaleString()}
-        update="-1.2%"
+        icon={Hourglass}
+        label="RDV en attente"
+        value={waiting.toLocaleString()}
         tone="amber"
       />
       <StatCard
-        icon={Heart}
-        label="Taux de Récupération"
-        value={`${Math.round(recoveryRate)}%`}
-        update="+0.5%"
-        tone="rose"
+        icon={LogOut}
+        label="Fin de journée estimée"
+        value={estimatedEnd}
+        update={allDone ? 'terminé' : undefined}
+        tone="sky"
       />
 
       <div className="group relative overflow-hidden rounded-card bg-gradient-to-br from-primary via-primary to-[#0a2a2a] p-6 mt-2 min-h-[180px] flex flex-col justify-end border border-transparent transition-all duration-300 hover:border-accent hover:-translate-y-0.5 hover:shadow-card-hover cursor-pointer">

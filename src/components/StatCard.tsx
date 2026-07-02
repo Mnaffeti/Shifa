@@ -7,7 +7,7 @@ interface StatCardProps {
   icon: LucideIcon;
   label: string;
   value: string;
-  update: string;
+  update?: string;
   sparkline?: boolean;
   tone?: StatTone;
 }
@@ -40,9 +40,11 @@ export default function StatCard({ icon: Icon, label, value, update, sparkline, 
             <h3 className="text-2xl font-medium text-text-primary tabular leading-tight mt-0.5">{value}</h3>
           </div>
         </div>
-        <span className={`badge border ${t.trend} text-[11px] font-medium tracking-wide tabular`}>
-          {update}
-        </span>
+        {update && (
+          <span className={`badge border ${t.trend} text-[11px] font-medium tracking-wide tabular`}>
+            {update}
+          </span>
+        )}
       </div>
 
       {sparkline && (

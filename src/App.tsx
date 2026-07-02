@@ -10,6 +10,7 @@ import { AppointmentProvider, useAppointments } from './context/AppointmentConte
 import { PatientProvider } from './context/PatientContext';
 import { ChartProvider } from './context/ChartContext';
 import { ConsultationProvider } from './context/ConsultationContext';
+import { ReminderProvider } from './context/ReminderContext';
 
 // Components
 import Navbar from './components/Navbar';
@@ -94,7 +95,9 @@ function AppContent() {
       <ConsultationProvider>
         <PatientProvider>
           <AppointmentProvider>
-            <MainLayout />
+            <ReminderProvider>
+              <MainLayout />
+            </ReminderProvider>
           </AppointmentProvider>
         </PatientProvider>
       </ConsultationProvider>

@@ -36,6 +36,79 @@ const AppointmentContext = createContext<AppointmentContextType | undefined>(und
 
 const TODAY = new Date().toISOString().split('T')[0];
 
+// ── Demo seed generator ───────────────────────────────────────────────────
+// Builds a realistic schedule across the *current* week so the demo always
+// looks current: past days completed, today a mix, upcoming days confirmed.
+const DEMO_ROSTER = [
+  { id: 'PT-001', name: 'Ahmed Mansour' },
+  { id: 'PT-002', name: 'Sarah Ben Ammar' },
+  { id: 'PT-003', name: 'Youssef Trabelsi' },
+  { id: 'PT-004', name: 'Leila Haddad' },
+  { id: 'PT-005', name: 'Karim Bouazizi' },
+  { id: 'PT-006', name: 'Nour Gharbi' },
+  { id: 'PT-008', name: 'Emna Jaziri' },
+  { id: 'PT-009', name: 'Rania Sassi' },
+  { id: 'PT-010', name: 'Hedi Belhaj' },
+];
+
+const DEMO_TYPES: AppointmentType[] = ['Consultation', 'Follow-up', 'Surgery'];
+const DEMO_SLOTS = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30'];
+
+function addMinutesTo(time: string, minutes: number): string {
+  const [h, m] = time.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
+}
+
+function ymdUTC(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
+function generateDemoWeek(): Appointment[] {
+  const out: Appointment[] = [];
+  const todayUTC = new Date(TODAY + 'T00:00:00Z');
+  const dow = (todayUTC.getUTCDay() + 6) % 7; // Monday = 0
+  const monday = new Date(todayUTC);
+  monday.setUTCDate(todayUTC.getUTCDate() - dow);
+
+  let counter = 1;
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(monday);
+    day.setUTCDate(monday.getUTCDate() + i);
+    const dateStr = ymdUTC(day);
+    const isPast = dateStr < TODAY;
+    const isToday = dateStr === TODAY;
+    const count = i >= 5 ? 2 : isToday ? 6 : 4; // lighter weekends
+
+    for (let j = 0; j < count; j++) {
+      const patient = DEMO_ROSTER[(counter - 1) % DEMO_ROSTER.length];
+      const type = DEMO_TYPES[(i + j) % DEMO_TYPES.length];
+      const startTime = DEMO_SLOTS[j % DEMO_SLOTS.length];
+      const duration = type === 'Surgery' ? 60 : 30;
+
+      let status: Appointment['status'];
+      if (isPast) status = 'Completed';
+      else if (isToday) status = j < 2 ? 'Completed' : j === 5 ? 'Pending' : 'Confirmed';
+      else status = 'Confirmed';
+
+      out.push({
+        id: String(counter),
+        patientId: patient.id,
+        patientName: patient.name,
+        doctor: 'Dr. Youssef',
+        date: dateStr,
+        startTime,
+        endTime: addMinutesTo(startTime, duration),
+        duration,
+        type,
+        status,
+      });
+      counter++;
+    }
+  }
+  return out;
+}
+
 function firstConfirmedToday(apts: Appointment[]): string | null {
   const sorted = apts
     .filter(a => a.date === TODAY && (a.status === 'Confirmed' || a.status === 'Pending'))
@@ -49,44 +122,7 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
     const saved = localStorage.getItem('shifa_appointments');
     if (saved) return JSON.parse(saved);
-    return [
-      {
-        id: '1',
-        patientId: 'PT-001',
-        patientName: 'Ahmed Mansour',
-        doctor: 'Dr. Youssef',
-        date: TODAY,
-        startTime: '09:00',
-        endTime: '09:30',
-        duration: 30,
-        type: 'Consultation',
-        status: 'Completed'
-      },
-      {
-        id: '2',
-        patientId: 'PT-002',
-        patientName: 'Sarah Ben Ammar',
-        doctor: 'Dr. Youssef',
-        date: TODAY,
-        startTime: '10:00',
-        endTime: '10:30',
-        duration: 30,
-        type: 'Consultation',
-        status: 'Confirmed'
-      },
-      {
-        id: '3',
-        patientId: 'PT-001',
-        patientName: 'Ahmed Mansour',
-        doctor: 'Dr. Youssef',
-        date: TODAY,
-        startTime: '11:00',
-        endTime: '11:30',
-        duration: 30,
-        type: 'Follow-up',
-        status: 'Confirmed'
-      }
-    ];
+    return generateDemoWeek();
   });
 
   const [currentPatientAptId, setCurrentPatientApt] = useState<string | null>(() => {
