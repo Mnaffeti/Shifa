@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { UserPlus, CalendarPlus, FileText, Search, X } from 'lucide-react';
+import { UserPlus, CalendarPlus, FileText, Search, X, Stethoscope } from 'lucide-react';
 import SidebarStats from '../components/SidebarStats';
 import RightPanel from '../components/RightPanel';
 import DashboardCharts from '../components/DashboardCharts';
@@ -12,10 +12,16 @@ import AppointmentFormModal from '../components/AppointmentFormModal';
 import PrescriptionModal from '../components/PrescriptionModal';
 import RemindersSection from '../components/RemindersSection';
 import { useAuth } from '../context/AuthContext';
-import { Appointment } from '../context/AppointmentContext';
+import { Appointment, useAppointments } from '../context/AppointmentContext';
 import { usePatients, Patient } from '../context/PatientContext';
 
 const QUICK_ACTIONS = [
+  {
+    id: 'quick' as const,
+    label: 'Consultation rapide',
+    icon: Stethoscope,
+    chip: 'bg-teal-50 text-primary group-hover:bg-teal-100',
+  },
   {
     id: 'patient' as const,
     label: 'Ajouter Patient',
@@ -38,19 +44,52 @@ const QUICK_ACTIONS = [
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
+  const { addAppointment, setCurrentPatientApt } = useAppointments();
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
 
   const [addPatientOpen, setAddPatientOpen] = useState(false);
   const [addRdvOpen, setAddRdvOpen] = useState(false);
   const [pickPatientOpen, setPickPatientOpen] = useState(false);
+  const [quickConsultOpen, setQuickConsultOpen] = useState(false);
   const [prescriptionPatient, setPrescriptionPatient] = useState<Patient | null>(null);
 
   const today = format(new Date(), "EEEE d MMMM yyyy", { locale: fr });
 
   const handleAction = (id: (typeof QUICK_ACTIONS)[number]['id']) => {
-    if (id === 'patient') setAddPatientOpen(true);
+    if (id === 'quick') setQuickConsultOpen(true);
+    else if (id === 'patient') setAddPatientOpen(true);
     else if (id === 'rdv') setAddRdvOpen(true);
     else if (id === 'ordonnance') setPickPatientOpen(true);
+  };
+
+  // Quick consultation: spin up a walk-in appointment at the current time and
+  // open the consultation page immediately.
+  const handleQuickConsult = (patient: Patient) => {
+    setQuickConsultOpen(false);
+
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const startTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const end = new Date(now.getTime() + 30 * 60 * 1000);
+    const endTime = `${pad(end.getHours())}:${pad(end.getMinutes())}`;
+
+    const walkIn: Appointment = {
+      id: Math.random().toString(36).substr(2, 9),
+      patientId: patient.id,
+      patientName: `${patient.firstName} ${patient.lastName}`,
+      doctor: user?.name ?? 'Dr. Youssef',
+      date: new Date().toISOString().split('T')[0],
+      startTime,
+      endTime,
+      duration: 30,
+      type: 'Consultation',
+      status: 'Confirmed',
+      notes: 'Consultation rapide (sans rendez-vous)',
+    };
+
+    addAppointment(walkIn);
+    setCurrentPatientApt(walkIn.id);
+    setActiveAppointment(walkIn);
   };
 
   return (
@@ -75,7 +114,7 @@ export default function DoctorDashboard() {
           </div>
 
           {/* Quick actions — the doctor's control station */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {QUICK_ACTIONS.map(action => (
               <button
                 key={action.id}
@@ -115,6 +154,15 @@ export default function DoctorDashboard() {
         onClose={() => setAddRdvOpen(false)}
       />
 
+      {/* Quick action: quick consultation — pick the patient, then open the page */}
+      <PatientPickerModal
+        isOpen={quickConsultOpen}
+        onClose={() => setQuickConsultOpen(false)}
+        onSelect={handleQuickConsult}
+        title="Consultation rapide"
+        subtitle="Choisissez le patient — la consultation démarre à l'heure actuelle"
+      />
+
       {/* Quick action: new prescription — pick the patient first */}
       <PatientPickerModal
         isOpen={pickPatientOpen}
@@ -150,9 +198,15 @@ interface PatientPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (patient: Patient) => void;
+  title?: string;
+  subtitle?: string;
 }
 
-function PatientPickerModal({ isOpen, onClose, onSelect }: PatientPickerModalProps) {
+function PatientPickerModal({
+  isOpen, onClose, onSelect,
+  title = 'Nouvelle ordonnance',
+  subtitle = 'Sélectionnez le patient concerné',
+}: PatientPickerModalProps) {
   const { patients } = usePatients();
   const { user } = useAuth();
   const [query, setQuery] = useState('');
@@ -184,8 +238,8 @@ function PatientPickerModal({ isOpen, onClose, onSelect }: PatientPickerModalPro
           >
             <div className="p-6 border-b border-border-subtle flex items-center justify-between bg-primary text-white">
               <div>
-                <h2 className="text-xl font-bold">Nouvelle ordonnance</h2>
-                <p className="text-xs text-white/70 font-medium">Sélectionnez le patient concerné</p>
+                <h2 className="text-xl font-bold">{title}</h2>
+                <p className="text-xs text-white/70 font-medium">{subtitle}</p>
               </div>
               <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
                 <X size={20} />

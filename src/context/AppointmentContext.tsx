@@ -18,7 +18,7 @@ export interface Appointment {
 
 interface AppointmentContextType {
   appointments: Appointment[];
-  addAppointment: (apt: Omit<Appointment, 'id'>) => void;
+  addAppointment: (apt: Omit<Appointment, 'id'> & { id?: string }) => void;
   updateAppointment: (id: string, apt: Partial<Appointment>) => void;
   deleteAppointment: (id: string) => void;
   confirmAppointment: (id: string) => void;
@@ -150,8 +150,8 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
     }
   }, [appointments]);
 
-  const addAppointment = (apt: Omit<Appointment, 'id'>) => {
-    const newApt: Appointment = { ...apt, id: Math.random().toString(36).substr(2, 9) };
+  const addAppointment = (apt: Omit<Appointment, 'id'> & { id?: string }) => {
+    const newApt: Appointment = { ...apt, id: apt.id ?? Math.random().toString(36).substr(2, 9) };
     setAppointments(prev => [...prev, newApt]);
   };
 
