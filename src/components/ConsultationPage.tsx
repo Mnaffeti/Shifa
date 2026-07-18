@@ -13,6 +13,7 @@ import { useChart, Vitals } from '../context/ChartContext';
 import { useConsultations, OrdonnanceItem } from '../context/ConsultationContext';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import ConsultationChatbot from './ConsultationChatbot';
 
 interface Props {
   appointment: Appointment;
@@ -821,6 +822,21 @@ export default function ConsultationPage({ appointment, onClose, onNavigate }: P
         </div>
       </div>
 
+      {/* Clinical assistant — floating chatbot (bottom-left) */}
+      <ConsultationChatbot
+        context={[
+          `Patient : ${appointment.patientName} (${appointment.patientId})`,
+          patient?.dob ? `Âge : ${calcAge(patient.dob)} ans` : null,
+          patient?.gender ? `Sexe : ${patient.gender}` : null,
+          patient?.bloodType ? `Groupe sanguin : ${patient.bloodType}` : null,
+          chart?.allergies?.length ? `Allergies : ${chart.allergies.map(a => a.label).join(', ')}` : null,
+          chart?.problemesActifs?.length ? `Problèmes actifs : ${chart.problemesActifs.map(p => p.label).join(', ')}` : null,
+          consultation?.diagnoses?.length ? `Diagnostics en cours : ${consultation.diagnoses.join(', ')}` : null,
+        ]
+          .filter(Boolean)
+          .join('\n')}
+      />
+
       {/* Auto-save toast */}
       <AnimatePresence>
         {savedPulse && isDraft && (
@@ -828,7 +844,7 @@ export default function ConsultationPage({ appointment, onClose, onNavigate }: P
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full bg-text-primary text-white text-xs font-medium shadow-xl"
+            className="fixed bottom-5 left-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full bg-text-primary text-white text-xs font-medium shadow-xl"
           >
             <span className="w-5 h-5 rounded-full bg-emerald-400/20 ring-1 ring-emerald-400 flex items-center justify-center">
               <Check size={11} strokeWidth={3} className="text-emerald-300" />
