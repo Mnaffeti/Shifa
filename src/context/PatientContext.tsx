@@ -35,7 +35,7 @@ const PatientContext = createContext<PatientContextType | undefined>(undefined);
 
 export function PatientProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<Patient[]>(() => {
-    const saved = localStorage.getItem('shifa_patients');
+    const saved = localStorage.getItem('shifa_patients_v2');
     if (saved) {
       const parsed: Patient[] = JSON.parse(saved);
       // Backfill createdAt for existing patients that don't have it
@@ -113,11 +113,73 @@ export function PatientProvider({ children }: { children: ReactNode }) {
         profession: 'Commerçant', cin: '01998877', assignedDoctor: 'Dr. Youssef', bloodType: 'O+',
         status: 'Active', lastVisit: daysAgo(20), avatar: avatar('Hedi', 'Belhaj'), createdAt: daysAgo(240),
       },
+      {
+        id: 'PT-011', firstName: 'Amine', lastName: 'Zouari', dob: '1990-01-30', gender: 'Homme',
+        phone: '+216 55 802 114', email: 'amine.zouari@example.com', address: '14 Rue de Marseille, Tunis',
+        profession: 'Développeur', cin: '10442233', assignedDoctor: 'Dr. Youssef', bloodType: 'A+',
+        status: 'Active', lastVisit: daysAgo(7), avatar: avatar('Amine', 'Zouari'), createdAt: daysAgo(120),
+      },
+      {
+        id: 'PT-012', firstName: 'Ines', lastName: 'Chaabane', dob: '1994-06-11', gender: 'Femme',
+        phone: '+216 98 220 447', email: 'ines.chaabane@example.com', address: '8 Rue de Palestine, Sousse',
+        profession: 'Graphiste', cin: '12009988', assignedDoctor: 'Dr. Youssef', bloodType: 'O+',
+        status: 'Active', lastVisit: daysAgo(2), avatar: avatar('Ines', 'Chaabane'), createdAt: daysAgo(64),
+      },
+      {
+        id: 'PT-013', firstName: 'Slim', lastName: 'Feriani', dob: '1958-10-02', gender: 'Homme',
+        phone: '+216 22 771 900', email: 'slim.feriani@example.com', address: '2 Avenue Bourguiba, Kairouan',
+        profession: 'Retraité', cin: '00223344', assignedDoctor: 'Dr. Youssef', bloodType: 'B+',
+        status: 'Active', lastVisit: daysAgo(15), avatar: avatar('Slim', 'Feriani'), createdAt: daysAgo(320),
+      },
+      {
+        id: 'PT-014', firstName: 'Yasmine', lastName: 'Dridi', dob: '2003-03-27', gender: 'Femme',
+        phone: '+216 26 660 512', email: 'yasmine.dridi@example.com', address: '19 Rue du Caire, Ariana',
+        profession: 'Étudiante', cin: '15778822', assignedDoctor: 'Dr. Youssef', bloodType: 'A-',
+        parentFirstName: 'Fatma', parentLastName: 'Dridi', parentComments: 'Mère — contact : +216 20 111 222',
+        status: 'New', lastVisit: 'Never', avatar: avatar('Yasmine', 'Dridi'), createdAt: daysAgo(1),
+      },
+      {
+        id: 'PT-015', firstName: 'Walid', lastName: 'Amri', dob: '1975-08-14', gender: 'Homme',
+        phone: '+216 50 448 907', email: 'walid.amri@example.com', address: '41 Rue Ibn Sina, Sfax',
+        profession: 'Professeur', cin: '04556677', assignedDoctor: 'Dr. Youssef', bloodType: 'AB+',
+        status: 'Active', lastVisit: daysAgo(30), avatar: avatar('Walid', 'Amri'), createdAt: daysAgo(200),
+      },
+      {
+        id: 'PT-016', firstName: 'Salma', lastName: 'Ayari', dob: '1987-11-19', gender: 'Femme',
+        phone: '+216 24 335 118', email: 'salma.ayari@example.com', address: '6 Rue de Grèce, Tunis',
+        profession: 'Comptable', cin: '08772211', assignedDoctor: 'Dr. Youssef', bloodType: 'O-',
+        status: 'Active', lastVisit: daysAgo(5), avatar: avatar('Salma', 'Ayari'), createdAt: daysAgo(110),
+      },
+      {
+        id: 'PT-017', firstName: 'Bilel', lastName: 'Nasri', dob: '1998-05-06', gender: 'Homme',
+        phone: '+216 97 009 663', email: 'bilel.nasri@example.com', address: '27 Avenue de Carthage, Nabeul',
+        profession: 'Cuisinier', cin: '14003399', assignedDoctor: 'Dr. Youssef', bloodType: 'B-',
+        status: 'New', lastVisit: 'Never', avatar: avatar('Bilel', 'Nasri'), createdAt: daysAgo(3),
+      },
+      {
+        id: 'PT-018', firstName: 'Mariem', lastName: 'Loued', dob: '1969-02-23', gender: 'Femme',
+        phone: '+216 52 664 900', email: 'mariem.loued@example.com', address: '11 Rue de Russie, Bizerte',
+        profession: 'Fonctionnaire', cin: '02887766', assignedDoctor: 'Dr. Youssef', bloodType: 'A+',
+        status: 'Active', lastVisit: daysAgo(18), avatar: avatar('Mariem', 'Loued'), createdAt: daysAgo(260),
+      },
+      {
+        id: 'PT-019', firstName: 'Firas', lastName: 'Guesmi', dob: '2010-09-01', gender: 'Homme',
+        phone: '+216 21 550 034', email: 'firas.guesmi@example.com', address: '3 Rue de Turquie, Monastir',
+        profession: 'Écolier', cin: '—', assignedDoctor: 'Dr. Youssef', bloodType: 'O+',
+        parentFirstName: 'Sami', parentLastName: 'Guesmi', parentComments: 'Père — suivi pédiatrique, asthme léger.',
+        status: 'Active', lastVisit: daysAgo(11), avatar: avatar('Firas', 'Guesmi'), createdAt: daysAgo(150),
+      },
+      {
+        id: 'PT-020', firstName: 'Dorra', lastName: 'Mabrouk', dob: '1981-12-15', gender: 'Femme',
+        phone: '+216 55 118 226', email: 'dorra.mabrouk@example.com', address: '50 Avenue de la Liberté, Gabès',
+        profession: 'Dentiste', cin: '06009911', assignedDoctor: 'Dr. Youssef', bloodType: 'AB-',
+        status: 'Inactive', lastVisit: daysAgo(120), avatar: avatar('Dorra', 'Mabrouk'), createdAt: daysAgo(400),
+      },
     ];
   });
 
   useEffect(() => {
-    localStorage.setItem('shifa_patients', JSON.stringify(patients));
+    localStorage.setItem('shifa_patients_v2', JSON.stringify(patients));
   }, [patients]);
 
   const addPatient = (patient: Omit<Patient, 'id' | 'lastVisit' | 'avatar' | 'createdAt'>) => {

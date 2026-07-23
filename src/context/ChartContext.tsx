@@ -161,6 +161,171 @@ const SEED_CHARTS: Record<string, PatientChart> = {
       spo2: 99,
     },
   },
+  'PT-003': {
+    patientId: 'PT-003',
+    allergies: [
+      { id: 'a1', substance: 'Iode', severity: 'moderate', reaction: 'Éruption cutanée' },
+    ],
+    antecedents: [
+      { id: 'ant1', type: 'medical', description: 'Hypercholestérolémie', date: '2019' },
+      { id: 'ant2', type: 'surgical', description: 'Hernie inguinale', date: '2015' },
+    ],
+    problemesActifs: [
+      { id: 'p1', cimCode: 'E78.0', label: 'Hypercholestérolémie', dateOnset: '2019-09-01', status: 'active' },
+    ],
+    traitements: [
+      { id: 't1', name: 'Atorvastatine', dosage: '20 mg', frequency: '1×/jour soir', since: '2019-10' },
+    ],
+    alertes: [
+      { id: 'al1', label: 'Allergie Iode' },
+      { id: 'al2', label: 'Cholestérol élevé' },
+    ],
+    notes: [
+      { id: 'n1', text: 'Bilan lipidique à recontrôler dans 3 mois. Conseils diététiques donnés.', author: 'Dr. Youssef', createdAt: '2024-05-02T09:15:00.000Z' },
+    ],
+    attachments: [],
+    dernieresConstantes: { date: '2024-05-02', weight: 88, height: 180, bp: '132/85', hr: 72, temp: 36.9, spo2: 97 },
+  },
+  'PT-004': {
+    patientId: 'PT-004',
+    allergies: [],
+    antecedents: [
+      { id: 'ant1', type: 'familial', description: 'Migraine (mère)' },
+    ],
+    problemesActifs: [
+      { id: 'p1', cimCode: 'G43.9', label: 'Migraine', dateOnset: '2021-04-20', status: 'active' },
+    ],
+    traitements: [
+      { id: 't1', name: 'Sumatriptan', dosage: '50 mg', frequency: 'Si crise', since: '2021-05' },
+    ],
+    alertes: [{ id: 'al1', label: 'Migraine chronique' }],
+    notes: [],
+    attachments: [],
+    dernieresConstantes: { date: '2024-06-18', weight: 62, height: 168, bp: '118/76', hr: 70, temp: 37.0, spo2: 99 },
+  },
+  'PT-005': {
+    patientId: 'PT-005',
+    allergies: [{ id: 'a1', substance: 'Arachides', severity: 'severe', reaction: 'Œdème de Quincke' }],
+    antecedents: [{ id: 'ant1', type: 'medical', description: 'Asthme allergique', date: '2010' }],
+    problemesActifs: [
+      { id: 'p1', cimCode: 'J45', label: 'Asthme', dateOnset: '2010-03-01', status: 'active' },
+    ],
+    traitements: [
+      { id: 't1', name: 'Salbutamol', dosage: '100 µg', frequency: 'Si besoin', since: '2010-04' },
+      { id: 't2', name: 'Budésonide', dosage: '200 µg', frequency: '2×/jour', since: '2018-01' },
+    ],
+    alertes: [
+      { id: 'al1', label: 'Allergie Arachides' },
+      { id: 'al2', label: 'Asthme' },
+    ],
+    notes: [],
+    attachments: [],
+    dernieresConstantes: { date: '2024-06-30', weight: 74, height: 178, bp: '124/78', hr: 80, temp: 36.7, spo2: 96 },
+  },
+  'PT-006': {
+    patientId: 'PT-006',
+    allergies: [],
+    antecedents: [{ id: 'ant1', type: 'medical', description: 'Anémie ferriprive', date: '2022' }],
+    problemesActifs: [],
+    traitements: [
+      { id: 't1', name: 'Fer (Tardyferon)', dosage: '80 mg', frequency: '1×/jour', since: '2022-11' },
+    ],
+    alertes: [{ id: 'al1', label: 'Anémie' }],
+    notes: [
+      { id: 'n1', text: 'Ferritine en amélioration. Poursuivre supplémentation 2 mois.', author: 'Dr. Youssef', createdAt: '2024-05-20T10:00:00.000Z' },
+    ],
+    attachments: [],
+    dernieresConstantes: { date: '2024-05-20', weight: 60, height: 170, bp: '108/68', hr: 76, temp: 36.8, spo2: 99 },
+  },
+  'PT-008': {
+    patientId: 'PT-008',
+    allergies: [],
+    antecedents: [],
+    problemesActifs: [],
+    traitements: [],
+    alertes: [],
+    notes: [],
+    attachments: [],
+    dernieresConstantes: { date: '2024-07-01', weight: 55, height: 162, bp: '112/72', hr: 68, temp: 36.6, spo2: 100 },
+  },
+  'PT-009': {
+    patientId: 'PT-009',
+    allergies: [{ id: 'a1', substance: 'Pollen', severity: 'mild', reaction: 'Rhinite saisonnière' }],
+    antecedents: [{ id: 'ant1', type: 'medical', description: 'Hypothyroïdie', date: '2017' }],
+    problemesActifs: [
+      { id: 'p1', cimCode: 'E03.9', label: 'Hypothyroïdie', dateOnset: '2017-02-01', status: 'active' },
+    ],
+    traitements: [
+      { id: 't1', name: 'Lévothyroxine', dosage: '75 µg', frequency: '1×/jour à jeun', since: '2017-03' },
+    ],
+    alertes: [{ id: 'al1', label: 'Hypothyroïdie' }],
+    notes: [],
+    attachments: [],
+    dernieresConstantes: { date: '2024-04-28', weight: 67, height: 166, bp: '120/80', hr: 74, temp: 36.9, spo2: 98 },
+  },
+  'PT-010': {
+    patientId: 'PT-010',
+    allergies: [],
+    antecedents: [
+      { id: 'ant1', type: 'medical', description: 'Diabète de type 2', date: '2012' },
+      { id: 'ant2', type: 'medical', description: 'Hypertension artérielle', date: '2014' },
+    ],
+    problemesActifs: [
+      { id: 'p1', cimCode: 'E11', label: 'Diabète de type 2', dateOnset: '2012-06-01', status: 'active' },
+      { id: 'p2', cimCode: 'I10', label: 'Hypertension artérielle', dateOnset: '2014-01-01', status: 'active' },
+    ],
+    traitements: [
+      { id: 't1', name: 'Metformine', dosage: '1000 mg', frequency: '2×/jour', since: '2012-07' },
+      { id: 't2', name: 'Ramipril', dosage: '5 mg', frequency: '1×/jour', since: '2014-02' },
+    ],
+    alertes: [
+      { id: 'al1', label: 'Diabète type 2' },
+      { id: 'al2', label: 'Hypertension' },
+    ],
+    notes: [
+      { id: 'n1', text: 'HbA1c à 7,2%. Renforcer l\'activité physique. Contrôle podologique conseillé.', author: 'Dr. Youssef', createdAt: '2024-06-05T11:00:00.000Z' },
+    ],
+    attachments: [],
+    dernieresConstantes: { date: '2024-06-05', weight: 92, height: 174, bp: '145/90', hr: 78, temp: 37.0, spo2: 96 },
+  },
+  'PT-011': {
+    patientId: 'PT-011',
+    allergies: [],
+    antecedents: [],
+    problemesActifs: [{ id: 'p1', cimCode: 'M54.5', label: 'Lombalgie', dateOnset: '2023-11-01', status: 'active' }],
+    traitements: [{ id: 't1', name: 'Ibuprofène', dosage: '400 mg', frequency: 'Si douleur', since: '2023-11' }],
+    alertes: [{ id: 'al1', label: 'Lombalgie chronique' }],
+    notes: [],
+    attachments: [],
+    dernieresConstantes: { date: '2024-07-10', weight: 79, height: 182, bp: '126/82', hr: 71, temp: 36.8, spo2: 98 },
+  },
+  'PT-013': {
+    patientId: 'PT-013',
+    allergies: [{ id: 'a1', substance: 'Pénicilline', severity: 'moderate', reaction: 'Urticaire' }],
+    antecedents: [
+      { id: 'ant1', type: 'medical', description: 'BPCO', date: '2016' },
+      { id: 'ant2', type: 'surgical', description: 'Pontage coronarien', date: '2019' },
+    ],
+    problemesActifs: [
+      { id: 'p1', cimCode: 'J44', label: 'BPCO', dateOnset: '2016-05-01', status: 'active' },
+      { id: 'p2', cimCode: 'I25', label: 'Cardiopathie ischémique', dateOnset: '2019-08-01', status: 'active' },
+    ],
+    traitements: [
+      { id: 't1', name: 'Tiotropium', dosage: '18 µg', frequency: '1×/jour', since: '2016-06' },
+      { id: 't2', name: 'Aspirine', dosage: '100 mg', frequency: '1×/jour', since: '2019-09' },
+      { id: 't3', name: 'Bisoprolol', dosage: '5 mg', frequency: '1×/jour', since: '2019-09' },
+    ],
+    alertes: [
+      { id: 'al1', label: 'Allergie Pénicilline' },
+      { id: 'al2', label: 'BPCO' },
+      { id: 'al3', label: 'Cardiopathie' },
+    ],
+    notes: [
+      { id: 'n1', text: 'Dyspnée d\'effort stable. Vaccination antigrippale à jour.', author: 'Dr. Youssef', createdAt: '2024-06-22T08:30:00.000Z' },
+    ],
+    attachments: [],
+    dernieresConstantes: { date: '2024-06-22', weight: 70, height: 172, bp: '138/86', hr: 82, temp: 36.9, spo2: 93 },
+  },
 };
 
 // Ensure a chart object has every array field (backfills older localStorage data)
@@ -179,7 +344,7 @@ function normalizeChart(c: PatientChart): PatientChart {
 
 export function ChartProvider({ children }: { children: ReactNode }) {
   const [charts, setCharts] = useState<Record<string, PatientChart>>(() => {
-    const saved = localStorage.getItem('shifa_charts');
+    const saved = localStorage.getItem('shifa_charts_v2');
     if (saved) {
       const parsed: Record<string, PatientChart> = JSON.parse(saved);
       // Backfill any newly-added array fields for charts saved before this version
@@ -191,7 +356,7 @@ export function ChartProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem('shifa_charts', JSON.stringify(charts));
+    localStorage.setItem('shifa_charts_v2', JSON.stringify(charts));
   }, [charts]);
 
   const getChart = (patientId: string): PatientChart =>

@@ -49,6 +49,13 @@ const DEMO_ROSTER = [
   { id: 'PT-008', name: 'Emna Jaziri' },
   { id: 'PT-009', name: 'Rania Sassi' },
   { id: 'PT-010', name: 'Hedi Belhaj' },
+  { id: 'PT-011', name: 'Amine Zouari' },
+  { id: 'PT-012', name: 'Ines Chaabane' },
+  { id: 'PT-013', name: 'Slim Feriani' },
+  { id: 'PT-015', name: 'Walid Amri' },
+  { id: 'PT-016', name: 'Salma Ayari' },
+  { id: 'PT-018', name: 'Mariem Loued' },
+  { id: 'PT-019', name: 'Firas Guesmi' },
 ];
 
 const DEMO_TYPES: AppointmentType[] = ['Consultation', 'Follow-up', 'Surgery'];
@@ -78,7 +85,7 @@ function generateDemoWeek(): Appointment[] {
     const dateStr = ymdUTC(day);
     const isPast = dateStr < TODAY;
     const isToday = dateStr === TODAY;
-    const count = i >= 5 ? 2 : isToday ? 6 : 4; // lighter weekends
+    const count = i >= 5 ? 3 : isToday ? 7 : 6; // lighter weekends
 
     for (let j = 0; j < count; j++) {
       const patient = DEMO_ROSTER[(counter - 1) % DEMO_ROSTER.length];
@@ -120,7 +127,7 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [appointments, setAppointments] = useState<Appointment[]>(() => {
-    const saved = localStorage.getItem('shifa_appointments');
+    const saved = localStorage.getItem('shifa_appointments_v2');
     if (saved) return JSON.parse(saved);
     return generateDemoWeek();
   });
@@ -131,7 +138,7 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem('shifa_appointments', JSON.stringify(appointments));
+    localStorage.setItem('shifa_appointments_v2', JSON.stringify(appointments));
   }, [appointments]);
 
   useEffect(() => {
