@@ -13,6 +13,7 @@ import { useConsultations } from '../context/ConsultationContext';
 import { useAppointments, Appointment } from '../context/AppointmentContext';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import VitalCards from './VitalCards';
 
 interface Props {
   patient: Patient;
@@ -49,16 +50,45 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <div className="group bg-white rounded-[20px] shadow-card border border-border-subtle p-6 hover-card">
+    <div className="group bg-white rounded-[28px] border border-border-subtle/70 p-6 transition-all duration-300 hover:shadow-card">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
-          <Icon size={14} className="text-text-muted/50 group-hover:text-primary transition-colors" strokeWidth={1.75} />
-          <h3 className="text-[11px] font-medium text-text-muted uppercase tracking-widest group-hover:text-text-secondary transition-colors">{title}</h3>
+          <span className="w-8 h-8 rounded-full bg-bg-soft flex items-center justify-center shrink-0">
+            <Icon size={15} className="text-primary/70" strokeWidth={2} />
+          </span>
+          <h3 className="text-[15px] font-semibold text-text-primary tracking-tight">{title}</h3>
         </div>
         {action}
       </div>
       {count && <p className="text-sm font-medium text-text-secondary -mt-2 mb-4">{count}</p>}
       {children}
+    </div>
+  );
+}
+
+// ─── Ring meter (consultations completed) ───────────────────────────────────
+
+function RingMeter({ done, total }: { done: number; total: number }) {
+  const pct = total > 0 ? done / total : 0;
+  const R = 34;
+  const C = 2 * Math.PI * R;
+  const dash = C * pct;
+
+  return (
+    <div className="relative w-[92px] h-[92px] shrink-0">
+      <svg viewBox="0 0 80 80" className="w-full h-full -rotate-90">
+        <circle cx="40" cy="40" r={R} fill="none" stroke="var(--color-border-subtle)" strokeWidth="8" />
+        <circle
+          cx="40" cy="40" r={R} fill="none"
+          stroke="var(--color-success)" strokeWidth="8" strokeLinecap="round"
+          strokeDasharray={`${dash} ${C}`}
+          className="transition-all duration-700"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-xl font-semibold text-text-primary leading-none tabular">{done}</span>
+        <span className="text-[10px] font-medium text-text-muted">/ {total}</span>
+      </div>
     </div>
   );
 }
@@ -107,7 +137,7 @@ function InlineAdd({
 export default function PatientChartPage({ patient, onBack, onOpenConsultation }: Props) {
   const { user } = useAuth();
   const {
-    getChart, addProbleme, removeProbleme, addTraitement, removeTraitement,
+    getChart, updateVitals, addProbleme, removeProbleme, addTraitement, removeTraitement,
     addAlerte, removeAlerte, addNote, removeNote, addAttachment, removeAttachment,
   } = useChart();
   const { getPatientConsultations } = useConsultations();
@@ -158,6 +188,80 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
 
   const hasParent = !!(patient.parentFirstName || patient.parentLastName || patient.parentComments);
 
+  // Identity inline editor
+  const [editingIdentity, setEditingIdentity] = useState(false);
+  const [identityDraft, setIdentityDraft] = useState({
+    firstName: patient.firstName,
+    lastName: patient.lastName,
+    dob: patient.dob,
+    gender: patient.gender,
+    cin: patient.cin ?? '',
+    profession: patient.profession ?? '',
+    bloodType: patient.bloodType ?? '',
+    phone: patient.phone ?? '',
+  });
+
+  const openIdentityEditor = () => {
+    setIdentityDraft({
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      dob: patient.dob,
+      gender: patient.gender,
+      cin: patient.cin ?? '',
+      profession: patient.profession ?? '',
+      bloodType: patient.bloodType ?? '',
+      phone: patient.phone ?? '',
+    });
+    setEditingIdentity(true);
+  };
+
+  const saveIdentity = () => {
+    updatePatient(patient.id, {
+      firstName: identityDraft.firstName.trim(),
+      lastName: identityDraft.lastName.trim(),
+      dob: identityDraft.dob,
+      gender: identityDraft.gender,
+      cin: identityDraft.cin.trim(),
+      profession: identityDraft.profession.trim(),
+      bloodType: identityDraft.bloodType.trim(),
+      phone: identityDraft.phone.trim(),
+    });
+    setEditingIdentity(false);
+  };
+
+  // Vitals inline editor
+  const [editingVitals, setEditingVitals] = useState(false);
+  const [vitalsDraft, setVitalsDraft] = useState({
+    bp: '', hr: '', temp: '', spo2: '', weight: '', height: '',
+  });
+
+  const openVitalsEditor = () => {
+    const cur = chart.dernieresConstantes;
+    setVitalsDraft({
+      bp: cur?.bp ?? '',
+      hr: cur?.hr?.toString() ?? '',
+      temp: cur?.temp?.toString() ?? '',
+      spo2: cur?.spo2?.toString() ?? '',
+      weight: cur?.weight?.toString() ?? '',
+      height: cur?.height?.toString() ?? '',
+    });
+    setEditingVitals(true);
+  };
+
+  const saveVitals = () => {
+    const num = (s: string) => (s.trim() === '' ? undefined : Number(s));
+    updateVitals(patient.id, {
+      date: new Date().toISOString().split('T')[0],
+      bp: vitalsDraft.bp.trim() || undefined,
+      hr: num(vitalsDraft.hr),
+      temp: num(vitalsDraft.temp),
+      spo2: num(vitalsDraft.spo2),
+      weight: num(vitalsDraft.weight),
+      height: num(vitalsDraft.height),
+    });
+    setEditingVitals(false);
+  };
+
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
     Array.from(files).forEach(file => {
@@ -178,6 +282,10 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
       reader.readAsDataURL(file);
     });
   };
+
+  // Consultations completed for this patient (drives the ring meter).
+  const patientApts = appointments.filter(a => a.patientId === patient.id && a.status !== 'Cancelled');
+  const patientDone = patientApts.filter(a => a.status === 'Completed').length;
 
   const VITALS = [
     { label: 'Tension', value: v?.bp, unit: 'mmHg', icon: Heart },
@@ -209,26 +317,162 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
         {/* ══ LEFT PANEL ══ */}
         <div className="flex flex-col gap-5 xl:sticky xl:top-6">
           {/* Identity */}
-          <div className="bg-white rounded-[20px] shadow-card border border-border-subtle p-6 hover-card">
-            <h2 className="text-xl font-medium text-text-primary leading-tight tracking-tight">
-              {patient.firstName} {patient.lastName}
-            </h2>
-            <p className="text-[11px] font-medium text-text-muted tabular mt-1 tracking-wider">{patient.id}</p>
-
-            <div className="mt-5 pt-5 border-t border-border-subtle space-y-3">
-              {[
-                ['Âge', `${calcAge(patient.dob)} ans`],
-                ['Genre', patient.gender],
-                ['CIN', patient.cin || '—'],
-                ['Profession', patient.profession || '—'],
-                ['Groupe sanguin', patient.bloodType],
-                ['Téléphone', patient.phone || '—'],
-              ].map(([k, val]) => (
-                <div key={k} className="flex items-center justify-between text-sm">
-                  <span className="text-text-muted font-medium">{k}</span>
-                  <span className="text-text-primary font-medium text-right">{val}</span>
+          <div className="group relative bg-white rounded-[28px] border border-border-subtle/70 p-6">
+            {editingIdentity ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    autoFocus
+                    value={identityDraft.firstName}
+                    onChange={e => setIdentityDraft(d => ({ ...d, firstName: e.target.value }))}
+                    placeholder="Prénom"
+                    className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <input
+                    value={identityDraft.lastName}
+                    onChange={e => setIdentityDraft(d => ({ ...d, lastName: e.target.value }))}
+                    placeholder="Nom"
+                    className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
                 </div>
-              ))}
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">Naissance</span>
+                    <input
+                      type="date"
+                      value={identityDraft.dob}
+                      onChange={e => setIdentityDraft(d => ({ ...d, dob: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">Genre</span>
+                    <select
+                      value={identityDraft.gender}
+                      onChange={e => setIdentityDraft(d => ({ ...d, gender: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option>Homme</option>
+                      <option>Femme</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    value={identityDraft.cin}
+                    onChange={e => setIdentityDraft(d => ({ ...d, cin: e.target.value }))}
+                    placeholder="CIN"
+                    className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <input
+                    value={identityDraft.bloodType}
+                    onChange={e => setIdentityDraft(d => ({ ...d, bloodType: e.target.value }))}
+                    placeholder="Groupe sanguin"
+                    className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <input
+                  value={identityDraft.profession}
+                  onChange={e => setIdentityDraft(d => ({ ...d, profession: e.target.value }))}
+                  placeholder="Profession"
+                  className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <input
+                  value={identityDraft.phone}
+                  onChange={e => setIdentityDraft(d => ({ ...d, phone: e.target.value }))}
+                  placeholder="Téléphone"
+                  className="w-full px-3 py-2 rounded-xl border border-border-subtle text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={saveIdentity}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition-all"
+                  >
+                    <Check size={15} /> Enregistrer
+                  </button>
+                  <button
+                    onClick={() => setEditingIdentity(false)}
+                    className="p-2 rounded-xl border border-border-subtle text-text-muted hover:bg-bg-soft transition-all shrink-0"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {canEdit && (
+                  <button
+                    onClick={openIdentityEditor}
+                    title="Modifier les informations"
+                    className="absolute right-5 top-5 w-8 h-8 flex items-center justify-center rounded-full bg-bg-soft text-text-muted hover:text-primary transition-all"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                )}
+
+                {/* Avatar + name, centered like the reference */}
+                <div className="flex flex-col items-center text-center pt-1">
+                  <div className="w-[86px] h-[86px] rounded-full overflow-hidden border-4 border-white shadow-md ring-1 ring-border-subtle">
+                    <img src={patient.avatar} alt={patient.firstName} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                  </div>
+                  <h2 className="mt-3 text-xl font-semibold text-text-primary leading-tight tracking-tight">
+                    {patient.firstName} {patient.lastName}
+                  </h2>
+                  <p className="text-sm font-medium text-text-muted mt-0.5">
+                    {calcAge(patient.dob)} ans · {patient.gender}
+                  </p>
+                </div>
+
+                {/* Blood / Height / Weight tiles (reference layout) */}
+                <div className="mt-5 grid grid-cols-3 gap-2">
+                  {[
+                    ['Groupe', patient.bloodType || '—', ''],
+                    ['Taille', v?.height != null ? `${v.height}` : '—', v?.height != null ? 'cm' : ''],
+                    ['Poids', v?.weight != null ? `${v.weight}` : '—', v?.weight != null ? 'kg' : ''],
+                  ].map(([label, val, unit]) => (
+                    <div key={label} className="bg-bg-soft rounded-2xl py-3 px-2 text-center">
+                      <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-1">{label}</p>
+                      <p className="text-lg font-semibold text-text-primary leading-none tabular">
+                        {val}
+                        {unit && <span className="text-[11px] text-text-muted font-medium ml-0.5">{unit}</span>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Remaining identity details */}
+                <div className="mt-5 pt-5 border-t border-border-subtle/70 space-y-3">
+                  {[
+                    ['CIN', patient.cin || '—'],
+                    ['Profession', patient.profession || '—'],
+                    ['Téléphone', patient.phone || '—'],
+                    ['Identifiant', patient.id],
+                  ].map(([k, val]) => (
+                    <div key={k} className="flex items-center justify-between text-sm">
+                      <span className="text-text-muted font-medium">{k}</span>
+                      <span className="text-text-primary font-medium text-right tabular">{val}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Suivi des consultations — completed ring */}
+          <div className="bg-white rounded-[28px] border border-border-subtle/70 p-6 flex items-center gap-5">
+            <RingMeter done={patientDone} total={patientApts.length} />
+            <div className="min-w-0">
+              <h3 className="text-[15px] font-semibold text-text-primary tracking-tight">Suivi des consultations</h3>
+              <p className="text-sm text-text-muted mt-1">
+                {patientApts.length > 0
+                  ? `${patientDone} consultation${patientDone !== 1 ? 's' : ''} terminée${patientDone !== 1 ? 's' : ''} sur ${patientApts.length}`
+                  : 'Aucune consultation planifiée'}
+              </p>
+              {patientApts.length - patientDone > 0 && (
+                <p className="text-[13px] font-medium text-primary mt-1.5 tabular">
+                  {patientApts.length - patientDone} à venir
+                </p>
+              )}
             </div>
           </div>
 
@@ -348,28 +592,83 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
           </SectionCard>
 
           {/* Latest vitals */}
-          <SectionCard icon={Activity} title="Dernières constantes">
-            {v?.date && (
-              <p className="text-[11px] text-text-muted -mt-2 mb-3 tabular">Saisies le {fmt(v.date)}</p>
+          <SectionCard
+            icon={Activity}
+            title="Dernières constantes"
+            action={canEdit && !editingVitals && (
+              <button
+                onClick={openVitalsEditor}
+                title="Modifier les constantes"
+                className="w-7 h-7 flex items-center justify-center rounded-full border border-border-subtle text-text-muted hover:text-primary hover:border-primary/40 transition-all"
+              >
+                <Pencil size={13} />
+              </button>
             )}
-            <div className="grid grid-cols-2 gap-2.5">
-              {VITALS.map(vit => (
-                <div key={vit.label} className="bg-bg-soft rounded-xl p-3 border border-border-subtle">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <vit.icon size={11} className="text-text-muted/50" strokeWidth={1.75} />
-                    <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">{vit.label}</span>
-                  </div>
-                  {vit.value !== undefined && vit.value !== '' ? (
-                    <p className="text-lg font-medium text-text-primary leading-none tabular">
-                      {vit.value}
-                      <span className="text-[10px] text-text-muted font-medium ml-1">{vit.unit}</span>
-                    </p>
-                  ) : (
-                    <p className="text-lg font-medium text-text-muted/30 leading-none">—</p>
-                  )}
+          >
+            {editingVitals ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2.5">
+                  {([
+                    ['Tension', 'bp', 'mmHg', 'text', '138/88'],
+                    ['Fréq. card.', 'hr', 'bpm', 'number', '76'],
+                    ['Température', 'temp', '°C', 'number', '37.0'],
+                    ['SpO₂', 'spo2', '%', 'number', '98'],
+                    ['Poids', 'weight', 'kg', 'number', '70'],
+                    ['Taille', 'height', 'cm', 'number', '175'],
+                  ] as const).map(([label, key, unit, type, ph]) => (
+                    <label key={key} className="flex flex-col gap-1 bg-bg-soft rounded-xl p-3 border border-border-subtle">
+                      <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">{label} <span className="normal-case">({unit})</span></span>
+                      <input
+                        type={type}
+                        step={type === 'number' ? 'any' : undefined}
+                        value={vitalsDraft[key]}
+                        onChange={e => setVitalsDraft(d => ({ ...d, [key]: e.target.value }))}
+                        placeholder={ph}
+                        className="w-full bg-transparent text-lg font-medium text-text-primary tabular focus:outline-none"
+                      />
+                    </label>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={saveVitals}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition-all"
+                  >
+                    <Check size={15} /> Enregistrer
+                  </button>
+                  <button
+                    onClick={() => setEditingVitals(false)}
+                    className="p-2 rounded-xl border border-border-subtle text-text-muted hover:bg-bg-soft transition-all shrink-0"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {v?.date && (
+                  <p className="text-[11px] text-text-muted -mt-2 mb-3 tabular">Saisies le {fmt(v.date)}</p>
+                )}
+                <div className="grid grid-cols-2 gap-2.5">
+                  {VITALS.map(vit => (
+                    <div key={vit.label} className="bg-bg-soft rounded-2xl p-3">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <vit.icon size={11} className="text-text-muted/50" strokeWidth={1.75} />
+                        <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">{vit.label}</span>
+                      </div>
+                      {vit.value !== undefined && vit.value !== '' ? (
+                        <p className="text-lg font-medium text-text-primary leading-none tabular">
+                          {vit.value}
+                          <span className="text-[10px] text-text-muted font-medium ml-1">{vit.unit}</span>
+                        </p>
+                      ) : (
+                        <p className="text-lg font-medium text-text-muted/30 leading-none">—</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </SectionCard>
         </div>
 
@@ -660,7 +959,7 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
         </div>
 
         {/* ══ RIGHT PANEL ══ */}
-        <div className="xl:sticky xl:top-6">
+        <div className="flex flex-col gap-5 xl:sticky xl:top-6">
           <div className="group bg-white rounded-[20px] shadow-card border border-border-subtle p-6 hover-card">
             <div className="flex items-center gap-2.5 mb-1">
               <Stethoscope size={14} className="text-text-muted/50 group-hover:text-primary transition-colors" strokeWidth={1.75} />
@@ -670,7 +969,7 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
               {consultations.length} dossier{consultations.length !== 1 ? 's' : ''}
             </p>
 
-            <div className="space-y-2.5 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1 [scrollbar-width:thin]">
               {consultations.length === 0 ? (
                 <p className="text-sm text-text-muted">Aucune consultation signée.</p>
               ) : (
@@ -705,6 +1004,9 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
               )}
             </div>
           </div>
+
+          {/* Daily updates — highlighted vitals with mini charts */}
+          <VitalCards hr={v?.hr} spo2={v?.spo2} />
         </div>
       </div>
 

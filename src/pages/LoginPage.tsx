@@ -1,35 +1,90 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, ChevronRight } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ChevronRight, User, Stethoscope } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 
+type Mode = 'login' | 'signup';
+type Role = 'SECRETARY' | 'DOCTOR';
+
+const SPECIALTIES = [
+  'Médecine générale',
+  'Cardiologie',
+  'Dermatologie',
+  'Gynécologie',
+  'Pédiatrie',
+  'Neurologie',
+  'Ophtalmologie',
+  'ORL',
+  'Orthopédie',
+  'Psychiatrie',
+  'Radiologie',
+  'Endocrinologie',
+  'Gastro-entérologie',
+  'Pneumologie',
+  'Autre',
+];
+
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
+
+  const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('doctor@shifa.com');
   const [password, setPassword] = useState('doctor123');
+  const [name, setName] = useState('');
+  const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'SECRETARY' | 'DOCTOR'>('DOCTOR');
+  const [selectedRole, setSelectedRole] = useState<Role>('DOCTOR');
+
+  const isSignup = mode === 'signup';
+
+  const setCredentials = (role: Role) => {
+    setSelectedRole(role);
+    if (mode === 'login') {
+      if (role === 'SECRETARY') {
+        setEmail('secretary@shifa.com');
+        setPassword('secretary123');
+      } else {
+        setEmail('doctor@shifa.com');
+        setPassword('doctor123');
+      }
+    }
+  };
+
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setError('');
+    if (next === 'signup') {
+      setEmail('');
+      setPassword('');
+      setName('');
+    } else {
+      setCredentials(selectedRole);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const success = login(email, password);
-    if (!success) {
-      setError('Identifiants invalides');
-    }
-  };
 
-  const setCredentials = (role: 'SECRETARY' | 'DOCTOR') => {
-    setSelectedRole(role);
-    if (role === 'SECRETARY') {
-      setEmail('secretary@shifa.com');
-      setPassword('secretary123');
-    } else {
-      setEmail('doctor@shifa.com');
-      setPassword('doctor123');
+    if (isSignup) {
+      if (!name.trim()) return setError('Veuillez saisir votre nom complet.');
+      if (password.length < 6) return setError('Le mot de passe doit contenir au moins 6 caractères.');
+
+      const res = signup({
+        name,
+        email,
+        password,
+        role: selectedRole,
+        specialty: selectedRole === 'DOCTOR' ? specialty : undefined,
+      });
+      if (!res.ok) setError(res.error || "Échec de l'inscription.");
+      return;
     }
+
+    const success = login(email, password);
+    if (!success) setError('Identifiants invalides');
   };
 
   return (
@@ -55,13 +110,20 @@ export default function LoginPage() {
             </div>
 
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-text-primary mb-2 font-heading tracking-tight leading-tight">Bon retour</h1>
-              <p className="text-base font-medium text-text-secondary">Veuillez sélectionner votre rôle et vous connecter.</p>
+              <h1 className="text-3xl font-bold text-text-primary mb-2 font-heading tracking-tight leading-tight">
+                {isSignup ? 'Créer un compte' : 'Bon retour'}
+              </h1>
+              <p className="text-base font-medium text-text-secondary">
+                {isSignup
+                  ? 'Sélectionnez votre rôle et renseignez vos informations.'
+                  : 'Veuillez sélectionner votre rôle et vous connecter.'}
+              </p>
             </div>
 
             {/* Role Selection */}
             <div className="flex p-1 bg-bg-soft rounded-2xl mb-8">
               <button
+                type="button"
                 onClick={() => setCredentials('DOCTOR')}
                 className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   selectedRole === 'DOCTOR'
@@ -72,6 +134,7 @@ export default function LoginPage() {
                 Médecin
               </button>
               <button
+                type="button"
                 onClick={() => setCredentials('SECRETARY')}
                 className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   selectedRole === 'SECRETARY'
@@ -95,6 +158,44 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Full name — signup only */}
+              {isSignup && (
+                <div>
+                  <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Nom complet</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
+                      placeholder={selectedRole === 'DOCTOR' ? 'Youssef Ben Ali' : 'Foulena Trabelsi'}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Specialty — signup + doctor only */}
+              {isSignup && selectedRole === 'DOCTOR' && (
+                <div>
+                  <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Spécialité</label>
+                  <div className="relative">
+                    <Stethoscope className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted z-10" size={20} />
+                    <select
+                      value={specialty}
+                      onChange={(e) => setSpecialty(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30 appearance-none cursor-pointer"
+                      required
+                    >
+                      {SPECIALTIES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Adresse Email</label>
                 <div className="relative">
@@ -132,30 +233,33 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between px-1">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <div className="relative flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="peer sr-only"
-                    />
-                    <div className="w-5 h-5 border-2 border-border-subtle rounded-md peer-checked:bg-primary peer-checked:border-primary transition-all" />
-                    <svg className="absolute w-3 h-3 text-white left-1 opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-bold text-text-secondary group-hover:text-primary transition-colors">Se souvenir de moi</span>
-                </label>
-                <a href="#" className="text-sm font-bold text-primary hover:underline">Mot de passe oublié ?</a>
-              </div>
+              {/* Remember me / forgot — login only */}
+              {!isSignup && (
+                <div className="flex items-center justify-between px-1">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="peer sr-only"
+                      />
+                      <div className="w-5 h-5 border-2 border-border-subtle rounded-md peer-checked:bg-primary peer-checked:border-primary transition-all" />
+                      <svg className="absolute w-3 h-3 text-white left-1 opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-bold text-text-secondary group-hover:text-primary transition-colors">Se souvenir de moi</span>
+                  </label>
+                  <a href="#" className="text-sm font-bold text-primary hover:underline">Mot de passe oublié ?</a>
+                </div>
+              )}
 
               <button
                 type="submit"
                 className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:brightness-110 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg mt-4"
               >
-                Se connecter
+                {isSignup ? "S'inscrire" : 'Se connecter'}
                 <ChevronRight size={22} />
               </button>
             </form>
@@ -163,7 +267,11 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center mt-8 text-text-secondary text-sm font-medium">
-          Vous n'avez pas de compte ? <a href="#" className="text-primary font-bold hover:underline">Contacter l'administrateur</a>
+          {isSignup ? (
+            <>Vous avez déjà un compte ? <button onClick={() => switchMode('login')} className="text-primary font-bold hover:underline">Se connecter</button></>
+          ) : (
+            <>Vous n'avez pas de compte ? <button onClick={() => switchMode('signup')} className="text-primary font-bold hover:underline">Créer un compte</button></>
+          )}
         </p>
       </motion.div>
     </div>

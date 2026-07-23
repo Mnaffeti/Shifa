@@ -1,50 +1,23 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { UserPlus, CalendarPlus, FileText, Search, X, Stethoscope } from 'lucide-react';
-import SidebarStats from '../components/SidebarStats';
+import { Search, X } from 'lucide-react';
 import RightPanel from '../components/RightPanel';
+import DashboardHeader, { QuickAction } from '../components/DashboardHeader';
+import KpiRail from '../components/KpiRail';
+import DayTimeline from '../components/DayTimeline';
 import DashboardCharts from '../components/DashboardCharts';
+import CardErrorBoundary from '../components/ui/CardErrorBoundary';
 import ConsultationPage from '../components/ConsultationPage';
 import PatientFormModal from '../components/PatientFormModal';
 import AppointmentFormModal from '../components/AppointmentFormModal';
 import PrescriptionModal from '../components/PrescriptionModal';
-import RemindersSection from '../components/RemindersSection';
 import { useAuth } from '../context/AuthContext';
 import { Appointment, useAppointments } from '../context/AppointmentContext';
 import { usePatients, Patient } from '../context/PatientContext';
 
-const QUICK_ACTIONS = [
-  {
-    id: 'quick' as const,
-    label: 'Consultation rapide',
-    icon: Stethoscope,
-    chip: 'bg-teal-50 text-primary group-hover:bg-teal-100',
-  },
-  {
-    id: 'patient' as const,
-    label: 'Ajouter Patient',
-    icon: UserPlus,
-    chip: 'bg-sky-50 text-sky-600 group-hover:bg-sky-100',
-  },
-  {
-    id: 'rdv' as const,
-    label: 'Nouveau RDV',
-    icon: CalendarPlus,
-    chip: 'bg-amber-50 text-amber-600 group-hover:bg-amber-100',
-  },
-  {
-    id: 'ordonnance' as const,
-    label: 'Nouvelle ordonnance',
-    icon: FileText,
-    chip: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100',
-  },
-];
-
 export default function DoctorDashboard() {
   const { user } = useAuth();
-  const { addAppointment, setCurrentPatientApt } = useAppointments();
+  const { appointments, addAppointment, setCurrentPatientApt } = useAppointments();
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
 
   const [addPatientOpen, setAddPatientOpen] = useState(false);
@@ -53,9 +26,12 @@ export default function DoctorDashboard() {
   const [quickConsultOpen, setQuickConsultOpen] = useState(false);
   const [prescriptionPatient, setPrescriptionPatient] = useState<Patient | null>(null);
 
-  const today = format(new Date(), "EEEE d MMMM yyyy", { locale: fr });
+  // Only this doctor's appointments feed the timeline / KPIs / header.
+  const myAppointments = user?.role === 'DOCTOR'
+    ? appointments.filter(a => a.doctor === user.name)
+    : appointments;
 
-  const handleAction = (id: (typeof QUICK_ACTIONS)[number]['id']) => {
+  const handleAction = (id: QuickAction) => {
     if (id === 'quick') setQuickConsultOpen(true);
     else if (id === 'patient') setAddPatientOpen(true);
     else if (id === 'rdv') setAddRdvOpen(true);
@@ -94,51 +70,49 @@ export default function DoctorDashboard() {
 
   return (
     <>
-      <div className="grid grid-cols-[280px_1fr_380px] gap-8 items-start">
-        <div className="flex flex-col gap-8 sticky top-28">
-          <SidebarStats />
+      {/* Sticky header — greeting · date · next patient, + quick actions */}
+      <DashboardHeader name={user?.name} appointments={myAppointments} onAction={handleAction} />
+
+      <div className="grid grid-cols-1 xl:grid-cols-[260px_1fr_360px] gap-6 items-start mt-6">
+        {/* ── KPI rail ── */}
+        <div className="flex flex-col gap-6 xl:sticky xl:top-24">
+          <CardErrorBoundary label="Les indicateurs">
+            <KpiRail appointments={myAppointments} />
+          </CardErrorBoundary>
+          <CardErrorBoundary label="Les graphiques">
+            <DashboardCharts onCreate={() => setAddRdvOpen(true)} />
+          </CardErrorBoundary>
         </div>
 
-        <div className="flex flex-col gap-8 min-w-0">
-          <div className="flex flex-col gap-1.5">
-            <p className="inline-flex items-center gap-2 text-[11px] font-medium text-text-muted uppercase tracking-widest tabular">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent pulse-accent" />
-              {today}
-            </p>
-            <h1 className="text-3xl font-medium text-text-primary font-heading leading-tight tracking-tight">
-              Bonjour, {user?.name}
-            </h1>
-            <p className="text-sm font-medium text-text-muted">
-              Voici un aperçu de votre journée.
-            </p>
-          </div>
-
-          {/* Quick actions — the doctor's control station */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {QUICK_ACTIONS.map(action => (
-              <button
-                key={action.id}
-                onClick={() => handleAction(action.id)}
-                className="hover-card group flex items-center gap-3 bg-white rounded-[18px] border border-border-subtle p-4 text-left"
-              >
-                <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-200 ${action.chip}`}>
-                  <action.icon size={22} />
-                </span>
-                <span className="text-sm font-bold text-text-primary group-hover:text-primary transition-colors">
-                  {action.label}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <DashboardCharts />
-
-          <RemindersSection />
+        {/* ── Main: today's schedule is the hero ── */}
+        <div className="flex flex-col gap-6 min-w-0">
+          <CardErrorBoundary label="La timeline">
+            <DayTimeline
+              appointments={myAppointments}
+              onAppointmentClick={setActiveAppointment}
+              onBookSlot={() => setAddRdvOpen(true)}
+              onCreate={() => setAddRdvOpen(true)}
+            />
+          </CardErrorBoundary>
         </div>
 
-        <div className="sticky top-28">
+        {/* ── Side: appointments ── */}
+        <div className="xl:sticky xl:top-24">
           <RightPanel onPatientClick={setActiveAppointment} />
         </div>
+      </div>
+
+      {/* Sujet du jour — moved to the bottom, light card, 1px border, no dark gradient */}
+      <div className="mt-6 bg-white rounded-[16px] border border-border-subtle p-5">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[11px] font-medium uppercase tracking-widest text-[#64748B]">Sujet du jour</span>
+        </div>
+        <h4 className="text-base font-semibold text-text-primary leading-snug tracking-tight max-w-2xl">
+          Comment maintenir une <span className="text-[var(--color-brand)]">santé cardiaque</span> à l'ère du numérique
+        </h4>
+        <p className="text-sm text-text-secondary mt-1.5 max-w-2xl leading-relaxed">
+          Un aperçu des habitudes quotidiennes et du suivi connecté pour vos patients à risque cardiovasculaire.
+        </p>
       </div>
 
       {/* Quick action: add patient */}
