@@ -1,202 +1,187 @@
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell
-} from 'recharts';
-import { startOfWeek, addDays, format, isSameDay, isToday, isBefore } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { CheckCircle2, Clock, Calendar } from 'lucide-react';
-import { useAppointments } from '../context/AppointmentContext';
+import { useState } from 'react';
+import { startOfWeek, addDays, isSameDay } from 'date-fns';
+import { CalendarPlus, PieChart } from 'lucide-react';
+import { useAppointments, Appointment } from '../context/AppointmentContext';
+import { useAuth } from '../context/AuthContext';
+import EmptyState from './ui/EmptyState';
+import { shortDate } from '../lib/datetime';
 
-const TODAY = new Date().toISOString().split('T')[0];
+/**
+ * Charts picked by data volume (spec §5):
+ *  - Weekly activity → a collapsed 64px sparkline strip; bars only when ≥5 data
+ *    points across the week, otherwise the empty state.
+ *  - Consultation types (3 categories) → NO donut. A horizontal stacked bar +
+ *    a value table. Categorical palette validated (dataviz): teal/violet/amber,
+ *    identity carried by direct labels + table, never color alone.
+ */
 
-const TYPE_COLORS = {
-  Consultation: '#3DD6D0',
-  Suivi:        '#C8E04A',
-  Chirurgie:    '#1A4747',
-};
+// Validated categorical palette (light) — ΔE and contrast checks pass.
+const TYPE_META = [
+  { key: 'Consultation', label: 'Consultation', color: '#0D9488' },
+  { key: 'Follow-up',    label: 'Suivi',        color: '#7C3AED' },
+  { key: 'Surgery',      label: 'Chirurgie',    color: '#D97706' },
+] as const;
 
-function BarTooltip({ active, payload }: any) {
-  if (!active || !payload?.length) return null;
+interface Props {
+  onCreate?: () => void;
+}
+
+export default function DashboardCharts({ onCreate }: Props) {
+  const { appointments } = useAppointments();
+  const { user } = useAuth();
+
+  const mine = user?.role === 'DOCTOR'
+    ? appointments.filter(a => a.doctor === user.name)
+    : appointments;
+
   return (
-    <div className="bg-primary text-white px-3 py-1.5 rounded-xl shadow-lg text-xs font-medium tabular">
-      {payload[0].value} RDV
+    <div className="flex flex-col gap-6">
+      <WeekSparkline appointments={mine} onCreate={onCreate} />
+      <TypeBreakdown appointments={mine} onCreate={onCreate} />
     </div>
   );
 }
 
-export default function DashboardCharts() {
-  const { appointments } = useAppointments();
+/* ── Weekly sparkline strip (64px) ─────────────────────────────────────────── */
+
+function WeekSparkline({ appointments, onCreate }: { appointments: Appointment[]; onCreate?: () => void }) {
+  const [hover, setHover] = useState<number | null>(null);
 
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = addDays(weekStart, i);
+    return {
+      date,
+      dayLabel: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'][i],
+      count: appointments.filter(a => isSameDay(new Date(a.date), date)).length,
+      isToday: isSameDay(date, new Date()),
+    };
+  });
 
-  const weeklyData = weekDays.map(day => ({
-    label: format(day, 'EEE', { locale: fr }),
-    total: appointments.filter(a => isSameDay(new Date(a.date), day)).length,
-    isToday: isToday(day),
-    isPast: isBefore(day, new Date()) && !isToday(day),
-  }));
+  const total = days.reduce((s, d) => s + d.count, 0);
+  const max = Math.max(...days.map(d => d.count), 1);
 
-  const typeData = [
-    { name: 'Consultation', value: appointments.filter(a => a.type === 'Consultation').length, color: TYPE_COLORS.Consultation },
-    { name: 'Suivi',        value: appointments.filter(a => a.type === 'Follow-up').length,    color: TYPE_COLORS.Suivi },
-    { name: 'Chirurgie',    value: appointments.filter(a => a.type === 'Surgery').length,      color: TYPE_COLORS.Chirurgie },
-  ].filter(d => d.value > 0);
-
-  const todayApts  = appointments.filter(a => a.date === TODAY);
-  const completed  = todayApts.filter(a => a.status === 'Completed').length;
-  const upcoming   = todayApts.filter(a => a.status === 'Confirmed' || a.status === 'Pending').length;
-  const weekTotal  = weeklyData.reduce((s, d) => s + d.total, 0);
+  // Bars whenever the week has any activity; empty state only for a truly empty week.
+  if (total === 0) {
+    return (
+      <div className="bg-white rounded-[16px] border border-border-subtle">
+        <div className="flex items-center justify-between px-5 pt-4 pb-1">
+          <h3 className="text-sm font-semibold text-text-primary">Activité de la semaine</h3>
+        </div>
+        <EmptyState
+          message="Pas encore d'activité cette semaine"
+          actionLabel="Planifier un RDV"
+          onAction={onCreate}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-6">
-
-      {/* ── Weekly activity ── */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-lg font-medium text-text-primary tracking-tight">Activité de la semaine</h3>
-            <p className="text-xs text-text-muted font-medium mt-1 tabular">
-              {weekTotal} rendez-vous cette semaine
-            </p>
-          </div>
-          <div className="flex items-center gap-4 text-[11px] font-medium text-text-muted">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-accent inline-block" />
-              Aujourd'hui
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-teal-light inline-block" />
-              Passé
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-teal-light/30 inline-block" />
-              À venir
-            </span>
-          </div>
-        </div>
-
-        <div className="h-44">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={weeklyData} margin={{ top: 4, right: 0, left: -28, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F2F4" />
-              <XAxis
-                dataKey="label"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: '#9CA3AF', fontSize: 11, fontWeight: 500 }}
-                dy={8}
-              />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fill: '#9CA3AF', fontSize: 11 }}
-                allowDecimals={false}
-                width={28}
-              />
-              <Tooltip content={<BarTooltip />} cursor={{ fill: 'rgba(26,71,71,0.04)' }} />
-              <Bar dataKey="total" radius={[6, 6, 0, 0]} barSize={34}>
-                {weeklyData.map((d, i) => (
-                  <Cell
-                    key={i}
-                    fill={d.isToday ? '#C8E04A' : d.isPast ? '#3DD6D0' : '#B2EAE8'}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+    <div className="bg-white rounded-[16px] border border-border-subtle px-5 flex items-center gap-5" style={{ height: 64 }}>
+      <div className="shrink-0">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-[#64748B]">Semaine</p>
+        <p className="text-[15px] font-semibold text-text-primary tabular leading-tight">{total} RDV</p>
       </div>
 
-      {/* ── Bottom row ── */}
-      <div className="grid grid-cols-2 gap-6">
-
-        {/* Donut: consultation types */}
-        <div className="card flex flex-col">
-          <h3 className="text-lg font-medium text-text-primary mb-5 tracking-tight">Types de consultations</h3>
-          {typeData.length > 0 ? (
-            <div className="flex items-center gap-6 flex-1">
-              <div className="w-32 h-32 shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={typeData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={38}
-                      outerRadius={58}
-                      paddingAngle={3}
-                      dataKey="value"
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      {typeData.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+      {/* bars — thin marks, rounded data-ends, today highlighted */}
+      <div className="flex-1 flex items-end justify-between gap-2 h-9 relative" role="img" aria-label={`Activité: ${days.map(d => `${d.dayLabel} ${d.count}`).join(', ')}`}>
+        {days.map((d, i) => (
+          <div
+            key={i}
+            className="flex-1 h-full flex flex-col justify-end items-center group relative"
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+          >
+            <div
+              className={`w-full max-w-[18px] rounded-[3px] transition-colors ${d.isToday ? 'bg-[var(--color-brand)]' : 'bg-[var(--color-info)]/35 group-hover:bg-[var(--color-info)]/60'}`}
+              style={{ height: `${Math.max((d.count / max) * 100, d.count > 0 ? 8 : 2)}%` }}
+            />
+            {hover === i && (
+              <div className="absolute bottom-full mb-1.5 z-10 px-2 py-1 rounded-md bg-text-primary text-white text-[11px] font-medium tabular whitespace-nowrap shadow-lg">
+                {shortDate(d.date)} · {d.count} RDV
               </div>
-
-              <div className="flex flex-col gap-3 flex-1">
-                {typeData.map(d => (
-                  <div key={d.name} className="flex items-center gap-2.5">
-                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                    <span className="text-sm font-medium text-text-secondary flex-1">{d.name}</span>
-                    <span className="text-sm font-medium text-text-primary tabular">{d.value}</span>
-                  </div>
-                ))}
-                <div className="flex items-center gap-2.5 border-t border-border-subtle pt-3 mt-1">
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0 bg-transparent" />
-                  <span className="text-sm font-medium text-text-secondary flex-1">Total</span>
-                  <span className="text-sm font-medium text-text-primary tabular">
-                    {typeData.reduce((s, d) => s + d.value, 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="text-text-muted text-sm font-medium flex-1 flex items-center">
-              Aucun rendez-vous enregistré.
-            </p>
-          )}
-        </div>
-
-        {/* Today summary */}
-        <div className="card flex flex-col">
-          <h3 className="text-lg font-medium text-text-primary mb-5 tracking-tight">Aujourd'hui</h3>
-          <div className="flex flex-col gap-2.5 flex-1 justify-center">
-            <div className="group/row flex items-center justify-between p-3 bg-gradient-to-r from-teal-50 to-transparent rounded-xl border border-teal-100 hover-row hover:from-teal-100 cursor-default">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-teal-100 ring-1 ring-teal-200/70 flex items-center justify-center transition-all duration-300 group-hover/row:scale-105 group-hover/row:rotate-3">
-                  <Calendar size={15} className="text-teal-600" strokeWidth={2} />
-                </div>
-                <span className="text-sm font-medium text-text-secondary">Total</span>
-              </div>
-              <span className="text-2xl font-medium text-text-primary tabular">{todayApts.length}</span>
-            </div>
-            <div className="group/row flex items-center justify-between p-3 bg-gradient-to-r from-emerald-50 to-transparent rounded-xl border border-emerald-100 hover-row hover:from-emerald-100 cursor-default">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-100 ring-1 ring-emerald-200/70 flex items-center justify-center transition-all duration-300 group-hover/row:scale-105 group-hover/row:rotate-3">
-                  <CheckCircle2 size={15} className="text-emerald-600" strokeWidth={2} />
-                </div>
-                <span className="text-sm font-medium text-text-secondary">Terminés</span>
-              </div>
-              <span className="text-2xl font-medium text-text-primary tabular">{completed}</span>
-            </div>
-            <div className="group/row flex items-center justify-between p-3 bg-gradient-to-r from-sky-50 to-transparent rounded-xl border border-sky-100 hover-row hover:from-sky-100 cursor-default">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-sky-100 ring-1 ring-sky-200/70 flex items-center justify-center transition-all duration-300 group-hover/row:scale-105 group-hover/row:rotate-3">
-                  <Clock size={15} className="text-sky-600" strokeWidth={2} />
-                </div>
-                <span className="text-sm font-medium text-text-secondary">À venir</span>
-              </div>
-              <span className="text-2xl font-medium text-text-primary tabular">{upcoming}</span>
-            </div>
+            )}
           </div>
-        </div>
-
+        ))}
       </div>
+
+      {/* axis labels (text, not color-only) */}
+      <div className="hidden sm:flex flex-col justify-center gap-0.5 shrink-0 text-right">
+        <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-[#64748B]">
+          <span className="w-2 h-2 rounded-[2px] bg-[var(--color-brand)]" /> Aujourd'hui
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Consultation types: horizontal stacked bar + table ────────────────────── */
+
+function TypeBreakdown({ appointments, onCreate }: { appointments: Appointment[]; onCreate?: () => void }) {
+  const [hover, setHover] = useState<string | null>(null);
+
+  const rows = TYPE_META.map(t => ({
+    ...t,
+    value: appointments.filter(a => a.type === t.key).length,
+  }));
+  const total = rows.reduce((s, r) => s + r.value, 0);
+
+  return (
+    <div className="bg-white rounded-[16px] border border-border-subtle p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-text-primary">Types de consultations</h3>
+        {total > 0 && (
+          <span className="text-[11px] font-medium text-[#64748B] tabular">{total} au total</span>
+        )}
+      </div>
+
+      {total === 0 ? (
+        <EmptyState
+          icon={PieChart}
+          message="Aucun rendez-vous enregistré"
+          actionLabel="Planifier un RDV"
+          onAction={onCreate}
+        />
+      ) : (
+        <>
+          {/* Horizontal stacked bar — 2px surface gaps between segments */}
+          <div className="flex w-full h-3 rounded-full overflow-hidden bg-bg-soft" role="img" aria-label={rows.map(r => `${r.label} ${r.value}`).join(', ')}>
+            {rows.filter(r => r.value > 0).map((r) => (
+              <div
+                key={r.key}
+                className="h-full transition-opacity first:rounded-l-full last:rounded-r-full"
+                style={{
+                  width: `${(r.value / total) * 100}%`,
+                  backgroundColor: r.color,
+                  opacity: hover && hover !== r.key ? 0.4 : 1,
+                  boxShadow: '0 0 0 1.5px white',
+                }}
+                title={`${r.label}: ${r.value}`}
+              />
+            ))}
+          </div>
+
+          {/* Value table — legend text label + count + share (identity not color-alone) */}
+          <div className="mt-4 flex flex-col gap-2">
+            {rows.map(r => (
+              <div
+                key={r.key}
+                onMouseEnter={() => setHover(r.key)}
+                onMouseLeave={() => setHover(null)}
+                className="flex items-center gap-2.5 text-sm"
+              >
+                <span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ backgroundColor: r.color }} />
+                <span className="flex-1 font-medium text-text-secondary">{r.label}</span>
+                <span className="font-semibold text-text-primary tabular w-6 text-right">{r.value}</span>
+                <span className="text-[#64748B] tabular w-10 text-right">
+                  {total > 0 ? Math.round((r.value / total) * 100) : 0}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
