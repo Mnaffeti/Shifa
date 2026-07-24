@@ -21,6 +21,7 @@ import SecretaryDashboard from './components/SecretaryDashboard';
 
 // Pages
 import LoginPage from './pages/LoginPage';
+import WelcomeGate from './pages/WelcomeGate';
 import SchedulePage from './pages/SchedulePage';
 import PatientsPage from './pages/PatientsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -85,9 +86,11 @@ function MainLayout() {
 
 function AppContent() {
   const { isAuthenticated } = useAuth();
+  const [showLogin, setShowLogin] = useState(false);
 
   if (!isAuthenticated) {
-    return <LoginPage />;
+    // Gate first: two centered CTAs. "Se connecter" reveals the login page.
+    return showLogin ? <LoginPage /> : <WelcomeGate onLogin={() => setShowLogin(true)} />;
   }
 
   return (
