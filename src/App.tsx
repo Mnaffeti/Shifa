@@ -34,11 +34,11 @@ function MainLayout() {
 
   const renderDoctorView = () => {
     switch (currentView) {
-      case 'dashboard': return <DoctorDashboard />;
+      case 'dashboard': return <DoctorDashboard onNavigate={setCurrentView} />;
       case 'schedule': return <SchedulePage />;
       case 'patients': return <PatientsPage />;
       case 'settings': return <SettingsPage />;
-      default: return <DoctorDashboard />;
+      default: return <DoctorDashboard onNavigate={setCurrentView} />;
     }
   };
 

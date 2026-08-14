@@ -1,47 +1,51 @@
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { Search, X } from 'lucide-react';
-import RightPanel from '../components/RightPanel';
-import DashboardHeader, { QuickAction } from '../components/DashboardHeader';
-import KpiRail from '../components/KpiRail';
-import DayTimeline from '../components/DayTimeline';
-import DashboardCharts from '../components/DashboardCharts';
-import CardErrorBoundary from '../components/ui/CardErrorBoundary';
-import ConsultationPage from '../components/ConsultationPage';
-import PatientFormModal from '../components/PatientFormModal';
-import AppointmentFormModal from '../components/AppointmentFormModal';
-import PrescriptionModal from '../components/PrescriptionModal';
+import { AnimatePresence } from 'motion/react';
+import { ArrowRight, ChevronRight, Clock, Settings, Stethoscope, Users } from 'lucide-react';
+import ConsultationPage from './ConsultationPage';
+import PatientPickerModal from './PatientPickerModal';
 import { useAuth } from '../context/AuthContext';
 import { Appointment, useAppointments } from '../context/AppointmentContext';
-import { usePatients, Patient } from '../context/PatientContext';
+import { Patient } from '../context/PatientContext';
+import { longDate, ymd } from '../lib/datetime';
 
-export default function DoctorDashboard() {
+interface Props {
+  /** Hands navigation back to the shell so the cards can route. */
+  onNavigate?: (view: string) => void;
+}
+
+interface LauncherCard {
+  icon: any;
+  title: string;
+  description: string;
+  action: string;
+  onClick: () => void;
+}
+
+/**
+ * The doctor's home screen: a calm launcher, not a data dashboard.
+ * One primary action (start a consultation) plus three doors into the
+ * workspace. The patient archive itself lives on the Patients page.
+ */
+export default function DoctorDashboard({ onNavigate }: Props) {
   const { user } = useAuth();
   const { appointments, addAppointment, setCurrentPatientApt } = useAppointments();
+
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
-
-  const [addPatientOpen, setAddPatientOpen] = useState(false);
-  const [addRdvOpen, setAddRdvOpen] = useState(false);
   const [pickPatientOpen, setPickPatientOpen] = useState(false);
-  const [quickConsultOpen, setQuickConsultOpen] = useState(false);
-  const [prescriptionPatient, setPrescriptionPatient] = useState<Patient | null>(null);
 
-  // Only this doctor's appointments feed the timeline / KPIs / header.
-  const myAppointments = user?.role === 'DOCTOR'
-    ? appointments.filter(a => a.doctor === user.name)
-    : appointments;
+  // "Dr. Youssef Ben Ali" → "Dr. Youssef"; "Foulena" → "Foulena".
+  const displayName = (() => {
+    const name = user?.name?.trim();
+    if (!name) return '';
+    const parts = name.split(/\s+/);
+    return /^dr\.?$/i.test(parts[0]) ? parts.slice(0, 2).join(' ') : parts[0];
+  })();
 
-  const handleAction = (id: QuickAction) => {
-    if (id === 'quick') setQuickConsultOpen(true);
-    else if (id === 'patient') setAddPatientOpen(true);
-    else if (id === 'rdv') setAddRdvOpen(true);
-    else if (id === 'ordonnance') setPickPatientOpen(true);
-  };
+  const today = new Date();
 
-  // Quick consultation: spin up a walk-in appointment at the current time and
-  // open the consultation page immediately.
-  const handleQuickConsult = (patient: Patient) => {
-    setQuickConsultOpen(false);
+  // Start a walk-in consultation at the current time.
+  const handleStartConsultation = (patient: Patient) => {
+    setPickPatientOpen(false);
 
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -54,7 +58,7 @@ export default function DoctorDashboard() {
       patientId: patient.id,
       patientName: `${patient.firstName} ${patient.lastName}`,
       doctor: user?.name ?? 'Dr. Youssef',
-      date: new Date().toISOString().split('T')[0],
+      date: ymd(now),
       startTime,
       endTime,
       duration: 30,
@@ -68,89 +72,139 @@ export default function DoctorDashboard() {
     setActiveAppointment(walkIn);
   };
 
+  // Reopen the most recent completed consultation; fall back to the planning.
+  const openLastConsultation = () => {
+    const last = appointments
+      .filter(a => a.doctor === user?.name && a.status === 'Completed' && a.date <= ymd(today))
+      .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime))[0];
+
+    if (last) setActiveAppointment(last);
+    else onNavigate?.('schedule');
+  };
+
+  const cards: LauncherCard[] = [
+    {
+      icon: Users,
+      title: 'Patients',
+      description: 'Rechercher et consulter les dossiers de vos patients',
+      action: 'Voir les patients',
+      onClick: () => onNavigate?.('patients'),
+    },
+    {
+      icon: Clock,
+      title: 'Consultations récentes',
+      description: 'Retrouver et réviser vos dernières consultations',
+      action: 'Voir les consultations',
+      onClick: openLastConsultation,
+    },
+    {
+      icon: Settings,
+      title: 'Paramètres',
+      description: 'Personnaliser votre espace de travail clinique',
+      action: 'Gérer les paramètres',
+      onClick: () => onNavigate?.('settings'),
+    },
+  ];
+
   return (
     <>
-      {/* Sticky header — greeting · date · next patient, + quick actions */}
-      <DashboardHeader name={user?.name} appointments={myAppointments} onAction={handleAction} />
+      <div className="max-w-[1180px] mx-auto">
+        {/* ── Greeting ── */}
+        <header className="pt-2 pb-10">
+          <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-text-muted">
+            {longDate(today)} {today.getFullYear()}
+          </p>
+          <h1 className="flex items-center gap-3 text-[40px] sm:text-[46px] font-semibold text-text-primary tracking-tight leading-[1.1] mt-3">
+            Bonjour{displayName ? `, ${displayName}` : ''}
+            <span className="wave origin-[70%_70%] text-[36px]">👋</span>
+          </h1>
+          <p className="text-[17px] font-normal text-text-muted mt-2">
+            Prêt pour votre prochaine consultation ?
+          </p>
+        </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[260px_1fr_360px] gap-6 items-start mt-6">
-        {/* ── KPI rail ── */}
-        <div className="flex flex-col gap-6 xl:sticky xl:top-24">
-          <CardErrorBoundary label="Les indicateurs">
-            <KpiRail appointments={myAppointments} />
-          </CardErrorBoundary>
-          <CardErrorBoundary label="Les graphiques">
-            <DashboardCharts onCreate={() => setAddRdvOpen(true)} />
-          </CardErrorBoundary>
-        </div>
+        {/* ── Primary action ── */}
+        <button
+          onClick={() => setPickPatientOpen(true)}
+          className="group relative w-full overflow-hidden rounded-[24px] bg-primary text-left px-8 sm:px-10 py-9 transition-all duration-300 hover:brightness-[1.08] active:scale-[0.995]"
+        >
+          {/* Faint clinical cross grid — texture only, stays behind the text. */}
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage:
+                'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 32 32\'%3E%3Cpath d=\'M16 11v10M11 16h10\' stroke=\'white\' stroke-width=\'1.5\' stroke-linecap=\'round\'/%3E%3C/svg%3E")',
+              backgroundSize: '32px 32px',
+            }}
+          />
 
-        {/* ── Main: today's schedule is the hero ── */}
-        <div className="flex flex-col gap-6 min-w-0">
-          <CardErrorBoundary label="La timeline">
-            <DayTimeline
-              appointments={myAppointments}
-              onAppointmentClick={setActiveAppointment}
-              onBookSlot={() => setAddRdvOpen(true)}
-              onCreate={() => setAddRdvOpen(true)}
-            />
-          </CardErrorBoundary>
-        </div>
+          <div className="relative flex items-center gap-5 sm:gap-7">
+            <span className="w-[68px] h-[68px] rounded-[20px] bg-white/10 grid place-items-center shrink-0 transition-transform duration-300 group-hover:scale-105">
+              <Stethoscope size={30} className="text-white" strokeWidth={1.75} />
+            </span>
 
-        {/* ── Side: appointments ── */}
-        <div className="xl:sticky xl:top-24">
-          <RightPanel onPatientClick={setActiveAppointment} />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[28px] sm:text-[32px] font-semibold text-white tracking-tight leading-tight">
+                Nouvelle consultation
+              </h2>
+              <p className="text-[15px] font-normal text-white/70 mt-1.5">
+                Commencer une consultation avec un patient
+              </p>
+            </div>
+
+            <span className="hidden sm:flex items-center gap-4 shrink-0">
+              <span className="text-[15px] font-medium text-white/90">Démarrer</span>
+              <span className="w-12 h-12 rounded-full border border-white/25 grid place-items-center transition-all duration-300 group-hover:bg-white/10">
+                <ArrowRight
+                  size={19}
+                  className="text-white transition-transform duration-300 group-hover:translate-x-0.5"
+                  strokeWidth={2}
+                />
+              </span>
+            </span>
+          </div>
+        </button>
+
+        {/* ── Three doors ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+          {cards.map(card => (
+            <button
+              key={card.title}
+              onClick={card.onClick}
+              className="group bg-white rounded-[20px] border border-border-subtle p-7 text-left flex flex-col transition-all duration-300 hover:border-accent hover:shadow-card-hover hover:-translate-y-0.5"
+            >
+              <span className="w-11 h-11 rounded-full bg-primary/5 grid place-items-center transition-colors duration-300 group-hover:bg-accent/20">
+                <card.icon size={19} className="text-primary" strokeWidth={1.75} />
+              </span>
+
+              <h3 className="text-[19px] font-semibold text-text-primary tracking-tight mt-6">
+                {card.title}
+              </h3>
+              <p className="text-[14.5px] font-normal text-text-muted leading-relaxed mt-2 flex-1">
+                {card.description}
+              </p>
+
+              <span className="inline-flex items-center gap-1.5 text-[14px] font-medium text-primary mt-6">
+                {card.action}
+                <ChevronRight
+                  size={15}
+                  strokeWidth={2.25}
+                  className="transition-transform duration-300 group-hover:translate-x-1"
+                />
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Sujet du jour — moved to the bottom, light card, 1px border, no dark gradient */}
-      <div className="mt-6 bg-white rounded-[16px] border border-border-subtle p-5">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-[11px] font-medium uppercase tracking-widest text-[#64748B]">Sujet du jour</span>
-        </div>
-        <h4 className="text-base font-semibold text-text-primary leading-snug tracking-tight max-w-2xl">
-          Comment maintenir une <span className="text-[var(--color-brand)]">santé cardiaque</span> à l'ère du numérique
-        </h4>
-        <p className="text-sm text-text-secondary mt-1.5 max-w-2xl leading-relaxed">
-          Un aperçu des habitudes quotidiennes et du suivi connecté pour vos patients à risque cardiovasculaire.
-        </p>
-      </div>
-
-      {/* Quick action: add patient */}
-      <PatientFormModal
-        isOpen={addPatientOpen}
-        onClose={() => setAddPatientOpen(false)}
-        mode="add"
-      />
-
-      {/* Quick action: new appointment */}
-      <AppointmentFormModal
-        isOpen={addRdvOpen}
-        onClose={() => setAddRdvOpen(false)}
-      />
-
-      {/* Quick action: quick consultation — pick the patient, then open the page */}
-      <PatientPickerModal
-        isOpen={quickConsultOpen}
-        onClose={() => setQuickConsultOpen(false)}
-        onSelect={handleQuickConsult}
-        title="Consultation rapide"
-        subtitle="Choisissez le patient — la consultation démarre à l'heure actuelle"
-      />
-
-      {/* Quick action: new prescription — pick the patient first */}
+      {/* Pick the patient, then open the consultation page */}
       <PatientPickerModal
         isOpen={pickPatientOpen}
         onClose={() => setPickPatientOpen(false)}
-        onSelect={patient => {
-          setPickPatientOpen(false);
-          setPrescriptionPatient(patient);
-        }}
-      />
-
-      <PrescriptionModal
-        isOpen={!!prescriptionPatient}
-        onClose={() => setPrescriptionPatient(null)}
-        patientName={prescriptionPatient ? `${prescriptionPatient.firstName} ${prescriptionPatient.lastName}` : ''}
+        onSelect={handleStartConsultation}
+        title="Nouvelle consultation"
+        subtitle="Choisissez le patient — la consultation démarre à l'heure actuelle"
       />
 
       <AnimatePresence>
@@ -163,101 +217,5 @@ export default function DoctorDashboard() {
         )}
       </AnimatePresence>
     </>
-  );
-}
-
-// ─── Patient picker (for the "Nouvelle ordonnance" quick action) ────────────
-
-interface PatientPickerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (patient: Patient) => void;
-  title?: string;
-  subtitle?: string;
-}
-
-function PatientPickerModal({
-  isOpen, onClose, onSelect,
-  title = 'Nouvelle ordonnance',
-  subtitle = 'Sélectionnez le patient concerné',
-}: PatientPickerModalProps) {
-  const { patients } = usePatients();
-  const { user } = useAuth();
-  const [query, setQuery] = useState('');
-
-  const visible = patients
-    .filter(p => (user?.role === 'DOCTOR' ? p.assignedDoctor === user.name : true))
-    .filter(p =>
-      `${p.firstName} ${p.lastName} ${p.id} ${p.phone}`
-        .toLowerCase()
-        .includes(query.toLowerCase())
-    );
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative bg-white rounded-[24px] shadow-2xl w-full max-w-md overflow-hidden"
-          >
-            <div className="p-6 border-b border-border-subtle flex items-center justify-between bg-primary text-white">
-              <div>
-                <h2 className="text-xl font-bold">{title}</h2>
-                <p className="text-xs text-white/70 font-medium">{subtitle}</p>
-              </div>
-              <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-5">
-              <div className="relative mb-4">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
-                <input
-                  autoFocus
-                  type="text"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Rechercher par nom, ID, téléphone..."
-                  className="w-full pl-11 pr-4 py-2.5 rounded-pill border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
-                />
-              </div>
-
-              <div className="max-h-[46vh] overflow-y-auto flex flex-col gap-1.5">
-                {visible.length === 0 ? (
-                  <p className="text-center text-text-muted font-medium py-8">Aucun patient trouvé.</p>
-                ) : (
-                  visible.map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => onSelect(p)}
-                      className="hover-row flex items-center gap-3 p-2.5 rounded-2xl border border-transparent text-left transition-all"
-                    >
-                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-border-subtle shrink-0">
-                        <img src={p.avatar} alt={p.firstName} referrerPolicy="no-referrer" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-text-primary truncate">{p.firstName} {p.lastName}</p>
-                        <p className="text-[11px] font-medium text-text-muted tabular">{p.id}{p.phone ? ` · ${p.phone}` : ''}</p>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
   );
 }

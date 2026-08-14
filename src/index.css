@@ -11,6 +11,7 @@
   --color-gold: #F5C518;
 
   /* Surfaces */
+  --color-bg-app: #F2F3F5;
   --color-bg-soft: #F0F4F8;
   --color-card-dark: #1A3A3A;
   --color-border-subtle: #E8EDF2;
@@ -74,7 +75,9 @@
 @layer base {
   html, body {
     @apply antialiased;
-    background: radial-gradient(ellipse at top left, #B2D8D8 0%, #F0F4F8 50%, #F4C4C4 100%);
+    /* Calm clinical ground: neutral grey, a step down from white so the
+       white cards and navbar read as raised surfaces against it. */
+    background: var(--color-bg-app);
     min-height: 100vh;
   }
 

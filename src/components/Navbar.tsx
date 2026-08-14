@@ -17,8 +17,8 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
 
   const navItems: { icon: any; label: string; id: ViewType }[] = [
     { icon: Home, label: 'Tableau de bord', id: 'dashboard' },
-    { icon: Calendar, label: 'Planning', id: 'schedule' },
     { icon: Users, label: 'Patients', id: 'patients' },
+    { icon: Calendar, label: 'Planning', id: 'schedule' },
     { icon: Settings, label: 'Paramètres', id: 'settings' },
   ];
 
@@ -38,18 +38,19 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
         </div>
 
         {/* Nav Items */}
-        <div className="hidden md:flex items-center gap-1.5 bg-accent/20 backdrop-blur-md p-1.5 rounded-pill border border-accent/30 shadow-sm">
+        <div className="hidden md:flex items-center gap-1">
           {navItems.map((item) => (
             <button
               key={item.id}
               onClick={() => onViewChange(item.id)}
-              className={`flex items-center gap-2 px-5 py-2 rounded-pill text-base font-medium transition-all duration-300 ${
+              aria-current={currentView === item.id ? 'page' : undefined}
+              className={`flex items-center gap-2 px-4 py-2 rounded-pill text-[15px] font-medium transition-all duration-200 ${
                 currentView === item.id
-                  ? 'bg-accent text-primary shadow-md scale-105'
-                  : 'text-text-secondary hover:bg-white/40 hover:text-primary'
+                  ? 'bg-primary/[0.07] text-primary'
+                  : 'text-text-secondary hover:bg-bg-soft hover:text-primary'
               }`}
             >
-              <item.icon size={18} />
+              <item.icon size={17} strokeWidth={1.75} />
               {item.label}
             </button>
           ))}
