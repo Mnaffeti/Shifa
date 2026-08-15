@@ -1,0 +1,383 @@
+// SHIFA — database schema.
+//
+// This mirrors the TypeScript interfaces that previously lived in the Vite
+// app's React contexts (PatientContext, AppointmentContext, ChartContext,
+// ConsultationContext, ReminderContext, AuthContext). Field names match the
+// original interfaces so the API can serialize straight back to the shapes
+// the frontend already expects.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  DOCTOR
+  SECRETARY
+}
+
+enum PatientStatus {
+  Active
+  New
+  Inactive
+}
+
+enum AppointmentType {
+  Consultation
+  FollowUp   @map("Follow-up")
+  Surgery
+  Cancelled
+}
+
+enum AppointmentStatus {
+  Pending
+  Confirmed
+  Cancelled
+  Completed
+}
+
+enum ConsultationStatus {
+  draft
+  signed
+}
+
+enum AllergySeverity {
+  mild
+  moderate
+  severe
+}
+
+enum AntecedentType {
+  medical
+  surgical
+  familial
+}
+
+enum ProblemStatus {
+  active
+  resolved
+}
+
+enum AttachmentKind {
+  scan
+  photo
+  document
+}
+
+// ─── Accounts (was: shifa_accounts / shifa_auth) ────────────────────────────
+
+model Account {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  /// bcrypt hash — never the plaintext password the old localStorage kept.
+  passwordHash String
+  name         String
+  role         UserRole
+  avatar       String
+  specialty    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("accounts")
+}
+
+// ─── Patients (was: shifa_patients_v2) ──────────────────────────────────────
+
+model Patient {
+  /// Human-readable business id, e.g. "PT-001" — kept as the primary key so
+  /// existing appointment/chart references stay valid after migration.
+  id              String        @id
+  firstName       String
+  lastName        String
+  dob             String
+  gender          String
+  phone           String
+  email           String
+  address         String
+  profession      String
+  cin             String
+  parentFirstName String?
+  parentLastName  String?
+  parentComments  String?
+  assignedDoctor  String
+  bloodType       String
+  status          PatientStatus @default(New)
+  /// "Never" in the old model is represented as null here.
+  lastVisit       String?
+  avatar          String
+  createdAt       String
+  updatedAt       DateTime      @updatedAt
+
+  appointments  Appointment[]
+  consultations Consultation[]
+  chart         Chart?
+
+  @@index([assignedDoctor])
+  @@index([status])
+  @@map("patients")
+}
+
+// ─── Appointments (was: shifa_appointments_v2) ──────────────────────────────
+
+model Appointment {
+  id          String            @id @default(cuid())
+  patientId   String
+  patientName String
+  doctor      String
+  /// yyyy-MM-dd wall-clock clinic day.
+  date        String
+  /// "HH:MM" wall-clock times, not timezone-shifted.
+  startTime   String
+  endTime     String
+  duration    Int?
+  type        AppointmentType
+  status      AppointmentStatus @default(Pending)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  consultations Consultation[]
+
+  @@index([patientId])
+  @@index([doctor, date])
+  @@index([date, status])
+  @@map("appointments")
+}
+
+// ─── Patient chart (was: shifa_charts_v2) ───────────────────────────────────
+
+model Chart {
+  patientId String   @id
+  updatedAt DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  allergies      Allergy[]
+  antecedents    Antecedent[]
+  problemesActifs ActiveProblem[]
+  traitements    ChronicTreatment[]
+  alertes        MedicalAlert[]
+  notes          ClinicalNote[]
+  attachments    Attachment[]
+  /// Latest vitals snapshot (was `dernieresConstantes`).
+  vitals         Vitals?
+
+  @@map("charts")
+}
+
+model Allergy {
+  id        String          @id @default(cuid())
+  chartId   String
+  substance String
+  severity  AllergySeverity
+  reaction  String
+
+  chart Chart @relation(fields: [chartId], references: [patientId], onDelete: Cascade)
+
+  @@index([chartId])
+  @@map("allergies")
+}
+
+model Antecedent {
+  id          String         @id @default(cuid())
+  chartId     String
+  type        AntecedentType
+  description String
+  date        String?
+
+  chart Chart @relation(fields: [chartId], references: [patientId], onDelete: Cascade)
+
+  @@index([chartId])
+  @@map("antecedents")
+}
+
+model ActiveProblem {
+  id        String        @id @default(cuid())
+  chartId   String
+  cimCode   String?
+  label     String
+  dateOnset String
+  status    ProblemStatus @default(active)
+
+  chart Chart @relation(fields: [chartId], references: [patientId], onDelete: Cascade)
+
+  @@index([chartId])
+  @@map("active_problems")
+}
+
+model ChronicTreatment {
+  id        String @id @default(cuid())
+  chartId   String
+  name      String
+  dosage    String
+  frequency String
+  since     String
+
+  chart Chart @relation(fields: [chartId], references: [patientId], onDelete: Cascade)
+
+  @@index([chartId])
+  @@map("chronic_treatments")
+}
+
+model MedicalAlert {
+  id      String @id @default(cuid())
+  chartId String
+  label   String
+
+  chart Chart @relation(fields: [chartId], references: [patientId], onDelete: Cascade)
+
+  @@index([chartId])
+  @@map("medical_alerts")
+}
+
+model ClinicalNote {
+  id        String   @id @default(cuid())
+  chartId   String
+  text      String
+  author    String
+  createdAt DateTime @default(now())
+
+  chart Chart @relation(fields: [chartId], references: [patientId], onDelete: Cascade)
+
+  @@index([chartId])
+  @@map("clinical_notes")
+}
+
+model Attachment {
+  id       String         @id @default(cuid())
+  chartId  String
+  name     String
+  kind     AttachmentKind
+  mimeType String
+  /// base64 data URL, as in the original model. Large payloads — the API
+  /// omits this field from list responses and serves it only on demand.
+  dataUrl  String
+  addedAt  DateTime       @default(now())
+  addedBy  String
+
+  chart Chart @relation(fields: [chartId], references: [patientId], onDelete: Cascade)
+
+  @@index([chartId])
+  @@map("attachments")
+}
+
+/// Vitals attach either to a chart (latest snapshot) or to a consultation
+/// (the reading taken during that visit).
+model Vitals {
+  id             String  @id @default(cuid())
+  chartId        String? @unique
+  consultationId String? @unique
+  date           String
+  weight         Float?
+  height         Float?
+  bp             String?
+  hr             Int?
+  temp           Float?
+  spo2           Int?
+
+  chart        Chart?        @relation(fields: [chartId], references: [patientId], onDelete: Cascade)
+  consultation Consultation? @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@map("vitals")
+}
+
+// ─── Consultations (was: shifa_consultations) ───────────────────────────────
+
+model Consultation {
+  id            String             @id @default(cuid())
+  patientId     String
+  appointmentId String?
+  date          String
+  doctor        String
+  /// SOAP note, flattened from the nested `soap` object.
+  subjectif     String             @default("")
+  objectif      String             @default("")
+  assessment    String             @default("")
+  plan          String             @default("")
+  diagnoses     String[]           @default([])
+  /// Ordonnance metadata; the line items live in OrdonnanceItem.
+  renewedFromId String?
+  templateName  String?
+  status        ConsultationStatus @default(draft)
+  signedAt      DateTime?
+  signedBy      String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment Appointment?     @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  ordonnance  OrdonnanceItem[]
+  addenda     Addendum[]
+  constantes  Vitals?
+
+  @@index([patientId])
+  @@index([appointmentId])
+  @@index([doctor, date])
+  @@map("consultations")
+}
+
+model OrdonnanceItem {
+  id             String  @id @default(cuid())
+  consultationId String
+  medication     String
+  dosage         String
+  frequency      String
+  duration       String
+  instructions   String?
+  /// Preserves the clinician's ordering within the prescription.
+  position       Int     @default(0)
+
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId])
+  @@map("ordonnance_items")
+}
+
+model Addendum {
+  id             String   @id @default(cuid())
+  consultationId String
+  text           String
+  addedBy        String
+  addedAt        DateTime @default(now())
+
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+
+  @@index([consultationId])
+  @@map("addenda")
+}
+
+// ─── Reminders (was: shifa_reminders) ───────────────────────────────────────
+
+model Reminder {
+  id         String   @id @default(cuid())
+  text       String
+  dueTime    String?
+  authorRole UserRole
+  authorName String
+  done       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([done])
+  @@map("reminders")
+}
+
+// ─── Waitlist (was: WaitlistModal localStorage store) ───────────────────────
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([name, phone])
+  @@map("waitlist_entries")
+}

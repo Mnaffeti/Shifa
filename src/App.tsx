@@ -34,11 +34,11 @@ function MainLayout() {
 
   const renderDoctorView = () => {
     switch (currentView) {
-      case 'dashboard': return <DoctorDashboard />;
+      case 'dashboard': return <DoctorDashboard onNavigate={setCurrentView} />;
       case 'schedule': return <SchedulePage />;
       case 'patients': return <PatientsPage />;
       case 'settings': return <SettingsPage />;
-      default: return <DoctorDashboard />;
+      default: return <DoctorDashboard onNavigate={setCurrentView} />;
     }
   };
 
@@ -85,8 +85,22 @@ function MainLayout() {
 }
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
+
+  // The session lives in an httpOnly cookie, so on a refresh we can't know if
+  // the user is signed in until /api/auth/me answers. Hold the shell until
+  // then, otherwise the welcome gate flashes before the dashboard appears.
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <span className="w-8 h-8 rounded-full border-2 border-border-subtle border-t-primary animate-spin" />
+          <p className="text-[13px] font-medium text-text-muted">Chargement…</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     // Gate first: two centered CTAs. "Se connecter" reveals the login page.

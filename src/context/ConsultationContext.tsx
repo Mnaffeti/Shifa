@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import type { Vitals } from './ChartContext';
+import { consultationsApi } from '../lib/api';
+import { useAuth } from './AuthContext';
 
 export type { Vitals };
 
@@ -51,173 +53,191 @@ interface ConsultationContextType {
   updateDiagnoses: (id: string, diagnoses: string[]) => void;
   updateOrdonnance: (id: string, items: OrdonnanceItem[]) => void;
   updateConstantes: (id: string, constantes: Vitals) => void;
-  signConsultation: (id: string, doctor: string) => void;
-  unlockConsultation: (id: string) => void;
-  addAddendum: (id: string, text: string, doctor: string) => void;
+  signConsultation: (id: string, doctor: string) => Promise<void>;
+  unlockConsultation: (id: string) => Promise<void>;
+  addAddendum: (id: string, text: string, doctor: string) => Promise<void>;
   getPatientConsultations: (patientId: string) => Consultation[];
   findByAppointment: (appointmentId: string) => Consultation | undefined;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const ConsultationContext = createContext<ConsultationContextType | undefined>(undefined);
 
-const TODAY = new Date().toISOString().split('T')[0];
-
-const SEED: Consultation[] = [
-  {
-    id: 'cons-seed-001',
-    patientId: 'PT-001',
-    appointmentId: 'seed-apt-001',
-    date: '2024-04-10',
-    doctor: 'Dr. Youssef',
-    soap: {
-      subjectif: 'Patient de 39 ans suivi pour HTA et diabète de type 2. Se plaint de céphalées matinales depuis 1 semaine et de fatigue progressive. Bonne observance thérapeutique déclarée.',
-      objectif: 'PA : 148/92 mmHg, FC : 82 bpm, Poids : 83 kg, SpO2 : 97%.\nExamen cardiovasculaire : bruits du cœur réguliers, pas de souffle audible.\nExamen neurologique : sans particularité. Fond d\'œil non réalisé ce jour.',
-      assessment: 'I10 — Hypertension artérielle mal contrôlée\nE11.9 — Diabète de type 2 stable\nR51 — Céphalées à évaluer',
-      plan: 'Ajustement thérapeutique : augmentation Amlodipine 5→10 mg/j.\nContrôle tensionnel à J+15.\nBilan biologique : HbA1c, créatinine, ionogramme, bilan lipidique.\nRDV cardiologue si pas d\'amélioration à 1 mois.\nRégime hyposodé rappelé.',
-    },
-    diagnoses: ['Hypertension artérielle', 'Diabète de type 2', 'Céphalées'],
-    constantes: { date: '2024-04-10', weight: 83, height: 175, bp: '148/92', hr: 82, temp: 36.9, spo2: 97 },
-    ordonnance: {
-      items: [
-        { id: 'rx1', medication: 'Amlodipine', dosage: '10 mg', frequency: '1 comprimé/jour', duration: '1 mois', instructions: 'Le matin à jeun' },
-        { id: 'rx2', medication: 'Metformine', dosage: '850 mg', frequency: '2 comprimés/jour', duration: '1 mois', instructions: 'Pendant les repas (midi et soir)' },
-        { id: 'rx3', medication: 'Périndopril', dosage: '5 mg', frequency: '1 comprimé/jour', duration: '1 mois', instructions: 'Le matin' },
-      ],
-    },
-    status: 'signed',
-    signedAt: '2024-04-10T11:30:00.000Z',
-    signedBy: 'Dr. Youssef',
-    addenda: [],
-  },
-  {
-    id: 'cons-seed-002',
-    patientId: 'PT-001',
-    appointmentId: 'seed-apt-002',
-    date: '2024-02-15',
-    doctor: 'Dr. Youssef',
-    soap: {
-      subjectif: 'Consultation de suivi bimensuel. Patient asymptomatique, auto-mesures tensionnelles à domicile régulières (moyenne 130/82). Pas d\'effets indésirables signalés.',
-      objectif: 'PA : 132/84 mmHg, FC : 74 bpm, Poids : 82 kg.\nGlycémie capillaire : 1,28 g/L à jeun.\nExamen clinique sans anomalie.',
-      assessment: 'I10 — HTA équilibrée sous traitement\nE11.9 — Diabète type 2 bien contrôlé',
-      plan: 'Maintien du traitement en cours. Renouvellement 3 mois.\nHbA1c à 3 mois. Rappel activité physique 30 min/jour.',
-    },
-    diagnoses: ['Hypertension artérielle', 'Diabète de type 2'],
-    constantes: { date: '2024-02-15', weight: 82, bp: '132/84', hr: 74, temp: 36.7, spo2: 98 },
-    ordonnance: {
-      items: [
-        { id: 'rx4', medication: 'Amlodipine', dosage: '5 mg', frequency: '1 comprimé/jour', duration: '3 mois', instructions: 'Le matin' },
-        { id: 'rx5', medication: 'Metformine', dosage: '850 mg', frequency: '2 comprimés/jour', duration: '3 mois', instructions: 'Pendant les repas' },
-        { id: 'rx6', medication: 'Périndopril', dosage: '5 mg', frequency: '1 comprimé/jour', duration: '3 mois', instructions: 'Le matin' },
-      ],
-    },
-    status: 'signed',
-    signedAt: '2024-02-15T10:15:00.000Z',
-    signedBy: 'Dr. Youssef',
-    addenda: [],
-  },
-];
+/** How long to wait after the last keystroke before persisting a draft. */
+const AUTOSAVE_MS = 800;
 
 export function ConsultationProvider({ children }: { children: ReactNode }) {
-  const [consultations, setConsultations] = useState<Consultation[]>(() => {
-    const saved = localStorage.getItem('shifa_consultations');
-    if (saved) {
-      const parsed: Consultation[] = JSON.parse(saved);
-      // Backfill diagnoses for records saved before this field existed
-      return parsed.map(c => c.diagnoses ? c : { ...c, diagnoses: [] });
-    }
-    return SEED;
-  });
+  const { isAuthenticated } = useAuth();
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Pending autosave timers, keyed by consultation id.
+  const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Draft ids currently being created, so a double render can't create twice.
+  const creating = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    localStorage.setItem('shifa_consultations', JSON.stringify(consultations));
+    if (!isAuthenticated) {
+      setConsultations([]);
+      setIsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+
+    consultationsApi.list()
+      .then(({ consultations }) => {
+        if (cancelled) return;
+        setConsultations(consultations);
+        setError(null);
+      })
+      .catch(err => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Chargement impossible');
+      })
+      .finally(() => { if (!cancelled) setIsLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  // Flush any pending autosaves when the provider unmounts.
+  const timers = saveTimers.current;
+  useEffect(() => () => { timers.forEach(clearTimeout); timers.clear(); }, [timers]);
+
+  /**
+   * Persists the editable parts of a consultation after a quiet period.
+   * SOAP fields are typed character by character, so writing on every change
+   * would flood the API; this coalesces a burst of edits into one request.
+   */
+  const scheduleSave = useCallback((id: string) => {
+    const existing = saveTimers.current.get(id);
+    if (existing) clearTimeout(existing);
+
+    saveTimers.current.set(id, setTimeout(() => {
+      saveTimers.current.delete(id);
+
+      setConsultations(current => {
+        const c = current.find(x => x.id === id);
+        // Signed consultations are immutable server-side; don't attempt a write.
+        if (!c || c.status === 'signed') return current;
+
+        consultationsApi.update(id, {
+          soap: c.soap,
+          diagnoses: c.diagnoses,
+          ...(c.constantes ? { constantes: c.constantes } : {}),
+          ordonnance: c.ordonnance,
+        }).catch(err => {
+          setError(err instanceof Error ? err.message : 'Enregistrement impossible');
+        });
+
+        return current;
+      });
+    }, AUTOSAVE_MS));
+  }, []);
+
+  const findByAppointment = useCallback(
+    (appointmentId: string) => consultations.find(c => c.appointmentId === appointmentId),
+    [consultations],
+  );
+
+  /**
+   * Fire-and-forget by design: callers invoke this during render/effect and
+   * read the result from `consultations` on the next pass, exactly as the
+   * localStorage implementation behaved.
+   */
+  const getOrCreateDraft = useCallback((
+    appointmentId: string, patientId: string, doctor: string, date: string,
+  ) => {
+    if (creating.current.has(appointmentId)) return;
+
+    setConsultations(current => {
+      if (current.some(c => c.appointmentId === appointmentId)) return current;
+
+      creating.current.add(appointmentId);
+      consultationsApi.getOrCreate({ patientId, appointmentId, date, doctor })
+        .then(({ consultation }) => {
+          setConsultations(prev =>
+            prev.some(c => c.id === consultation.id) ? prev : [...prev, consultation],
+          );
+        })
+        .catch(err => {
+          setError(err instanceof Error ? err.message : 'Création de la consultation impossible');
+        })
+        .finally(() => { creating.current.delete(appointmentId); });
+
+      return current;
+    });
+  }, []);
+
+  // ── Local-first editors: update state now, persist shortly after ──────────
+
+  const updateConsultation = useCallback((id: string, fields: Partial<Consultation>) => {
+    setConsultations(prev => prev.map(c => (c.id === id ? { ...c, ...fields } : c)));
+    scheduleSave(id);
+  }, [scheduleSave]);
+
+  const updateSoap = useCallback((id: string, key: keyof Consultation['soap'], value: string) => {
+    setConsultations(prev =>
+      prev.map(c => (c.id === id ? { ...c, soap: { ...c.soap, [key]: value } } : c)));
+    scheduleSave(id);
+  }, [scheduleSave]);
+
+  const updateDiagnoses = useCallback((id: string, diagnoses: string[]) => {
+    setConsultations(prev => prev.map(c => (c.id === id ? { ...c, diagnoses } : c)));
+    scheduleSave(id);
+  }, [scheduleSave]);
+
+  const updateOrdonnance = useCallback((id: string, items: OrdonnanceItem[]) => {
+    setConsultations(prev =>
+      prev.map(c => (c.id === id ? { ...c, ordonnance: { ...c.ordonnance, items } } : c)));
+    scheduleSave(id);
+  }, [scheduleSave]);
+
+  const updateConstantes = useCallback((id: string, constantes: Vitals) => {
+    setConsultations(prev => prev.map(c => (c.id === id ? { ...c, constantes } : c)));
+    scheduleSave(id);
+  }, [scheduleSave]);
+
+  // ── Lifecycle actions: awaited, since they change legal status ────────────
+
+  const signConsultation = useCallback(async (id: string, doctor: string) => {
+    // Flush any queued edits first, or they'd be rejected once signed.
+    const pending = saveTimers.current.get(id);
+    if (pending) {
+      clearTimeout(pending);
+      saveTimers.current.delete(id);
+      const c = consultations.find(x => x.id === id);
+      if (c) {
+        await consultationsApi.update(id, {
+          soap: c.soap,
+          diagnoses: c.diagnoses,
+          ...(c.constantes ? { constantes: c.constantes } : {}),
+          ordonnance: c.ordonnance,
+        });
+      }
+    }
+
+    const { consultation } = await consultationsApi.sign(id, doctor);
+    setConsultations(prev => prev.map(c => (c.id === id ? consultation : c)));
   }, [consultations]);
 
-  const findByAppointment = (appointmentId: string) =>
-    consultations.find(c => c.appointmentId === appointmentId);
+  const unlockConsultation = useCallback(async (id: string) => {
+    const { consultation } = await consultationsApi.unlock(id);
+    setConsultations(prev => prev.map(c => (c.id === id ? consultation : c)));
+  }, []);
 
-  const getOrCreateDraft = (appointmentId: string, patientId: string, doctor: string, date: string) => {
-    if (consultations.find(c => c.appointmentId === appointmentId)) return;
-    const draft: Consultation = {
-      id: `cons-${Math.random().toString(36).substr(2, 9)}`,
-      patientId,
-      appointmentId,
-      date,
-      doctor,
-      soap: { subjectif: '', objectif: '', assessment: '', plan: '' },
-      diagnoses: [],
-      ordonnance: { items: [] },
-      status: 'draft',
-      addenda: [],
-    };
-    setConsultations(prev => [...prev, draft]);
-  };
+  const addAddendum = useCallback(async (id: string, text: string, doctor: string) => {
+    const { consultation } = await consultationsApi.addAddendum(id, text, doctor);
+    setConsultations(prev => prev.map(c => (c.id === id ? consultation : c)));
+  }, []);
 
-  const updateConsultation = (id: string, fields: Partial<Consultation>) => {
-    setConsultations(prev =>
-      prev.map(c => (c.id === id ? { ...c, ...fields } : c))
-    );
-  };
-
-  const updateSoap = (id: string, key: keyof Consultation['soap'], value: string) => {
-    setConsultations(prev =>
-      prev.map(c => (c.id === id ? { ...c, soap: { ...c.soap, [key]: value } } : c))
-    );
-  };
-
-  const updateDiagnoses = (id: string, diagnoses: string[]) => {
-    setConsultations(prev =>
-      prev.map(c => (c.id === id ? { ...c, diagnoses } : c))
-    );
-  };
-
-  const updateOrdonnance = (id: string, items: OrdonnanceItem[]) => {
-    setConsultations(prev =>
-      prev.map(c =>
-        c.id === id ? { ...c, ordonnance: { ...c.ordonnance, items } } : c
-      )
-    );
-  };
-
-  const updateConstantes = (id: string, constantes: Vitals) => {
-    setConsultations(prev =>
-      prev.map(c => (c.id === id ? { ...c, constantes } : c))
-    );
-  };
-
-  const signConsultation = (id: string, doctor: string) => {
-    setConsultations(prev =>
-      prev.map(c =>
-        c.id === id
-          ? { ...c, status: 'signed', signedAt: new Date().toISOString(), signedBy: doctor }
-          : c
-      )
-    );
-  };
-
-  const unlockConsultation = (id: string) => {
-    setConsultations(prev =>
-      prev.map(c =>
-        c.id === id
-          ? { ...c, status: 'draft', signedAt: undefined, signedBy: undefined }
-          : c
-      )
-    );
-  };
-
-  const addAddendum = (id: string, text: string, doctor: string) => {
-    setConsultations(prev =>
-      prev.map(c =>
-        c.id === id
-          ? { ...c, addenda: [...c.addenda, { text, addedBy: doctor, addedAt: new Date().toISOString() }] }
-          : c
-      )
-    );
-  };
-
-  const getPatientConsultations = (patientId: string) =>
+  const getPatientConsultations = useCallback((patientId: string) =>
     consultations
       .filter(c => c.patientId === patientId)
-      .sort((a, b) => b.date.localeCompare(a.date));
+      .sort((a, b) => b.date.localeCompare(a.date)),
+  [consultations]);
 
   return (
     <ConsultationContext.Provider value={{
@@ -233,6 +253,8 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
       addAddendum,
       getPatientConsultations,
       findByAppointment,
+      isLoading,
+      error,
     }}>
       {children}
     </ConsultationContext.Provider>
