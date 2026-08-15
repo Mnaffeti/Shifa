@@ -1,3 +1,0 @@
-# The Next.js backend is deployed as its own Vercel project (root: api/).
-# Excluding it here keeps the frontend build from scanning or bundling it.
-api/
