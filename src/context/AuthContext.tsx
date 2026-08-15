@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { ApiError, authApi, type ApiUser } from '../lib/api';
 
 export type UserRole = 'SECRETARY' | 'DOCTOR';
 
@@ -7,15 +8,6 @@ interface User {
   name: string;
   avatar: string;
   role: UserRole;
-  specialty?: string;
-}
-
-interface Account {
-  email: string;
-  password: string;
-  name: string;
-  role: UserRole;
-  avatar: string;
   specialty?: string;
 }
 
@@ -29,111 +21,78 @@ export interface SignupData {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => boolean;
-  signup: (data: SignupData) => { ok: boolean; error?: string };
-  logout: () => void;
+  /** Async: credentials are verified by the server, not in the browser. */
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  signup: (data: SignupData) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
+  /** True while the initial session probe is in flight. */
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SEED_ACCOUNTS: Account[] = [
-  {
-    email: 'secretary@shifa.com',
-    password: 'secretary123',
-    name: 'Foulena',
-    role: 'SECRETARY',
-    avatar: 'https://picsum.photos/seed/secretary-sophie/100/100'
-  },
-  {
-    email: 'doctor@shifa.com',
-    password: 'doctor123',
-    name: 'Dr. Youssef',
-    role: 'DOCTOR',
-    specialty: 'Spécialiste',
-    avatar: 'https://picsum.photos/seed/doctor-youssef/100/100'
-  }
-];
-
-function loadAccounts(): Account[] {
-  const saved = localStorage.getItem('shifa_accounts');
-  if (saved) {
-    try {
-      const parsed = JSON.parse(saved) as Account[];
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    } catch { /* fall through to seed */ }
-  }
-  return SEED_ACCOUNTS;
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [accounts, setAccounts] = useState<Account[]>(loadAccounts);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('shifa_auth');
-    return saved ? JSON.parse(saved) : null;
-  });
-
+  // Restore the session from the httpOnly cookie on boot. The user object is
+  // never persisted client-side — the server is the only source of truth for
+  // identity and role, so a tampered browser store can't escalate privileges.
   useEffect(() => {
-    localStorage.setItem('shifa_accounts', JSON.stringify(accounts));
-  }, [accounts]);
+    let cancelled = false;
 
-  const login = (email: string, password: string) => {
-    const account = accounts.find(a => a.email === email && a.password === password);
-    if (account) {
-      const userData: User = {
-        email: account.email,
-        name: account.name,
-        avatar: account.avatar,
-        role: account.role,
-        specialty: account.specialty
-      };
-      setUser(userData);
-      localStorage.setItem('shifa_auth', JSON.stringify(userData));
-      return true;
+    authApi.me()
+      .then(({ user }) => { if (!cancelled) setUser(user as User | null); })
+      .catch(() => { if (!cancelled) setUser(null); })
+      .finally(() => { if (!cancelled) setIsLoading(false); });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const { user } = await authApi.login(email, password);
+      setUser(user as User);
+      return { ok: true };
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.message
+        : 'Connexion impossible. Réessayez.';
+      return { ok: false, error: message };
     }
-    return false;
-  };
+  }, []);
 
-  const signup = (data: SignupData): { ok: boolean; error?: string } => {
-    const email = data.email.trim().toLowerCase();
-    if (accounts.some(a => a.email.toLowerCase() === email)) {
-      return { ok: false, error: 'Un compte existe déjà avec cet email.' };
+  const signup = useCallback(async (data: SignupData) => {
+    try {
+      const { user } = await authApi.signup({
+        name: data.name.trim(),
+        email: data.email.trim().toLowerCase(),
+        password: data.password,
+        role: data.role,
+        specialty: data.role === 'DOCTOR'
+          ? (data.specialty?.trim() || 'Médecin généraliste')
+          : undefined,
+      });
+      setUser(user as User);
+      return { ok: true };
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.message
+        : 'Création du compte impossible. Réessayez.';
+      return { ok: false, error: message };
     }
+  }, []);
 
-    // Doctors are addressed as "Dr. …"; keep the prefix if already present.
-    const displayName =
-      data.role === 'DOCTOR' && !/^dr\.?\s/i.test(data.name.trim())
-        ? `Dr. ${data.name.trim()}`
-        : data.name.trim();
-
-    const account: Account = {
-      email,
-      password: data.password,
-      name: displayName,
-      role: data.role,
-      avatar: `https://picsum.photos/seed/${encodeURIComponent(email)}/100/100`,
-      specialty: data.role === 'DOCTOR' ? data.specialty?.trim() || 'Médecin généraliste' : undefined,
-    };
-
-    setAccounts(prev => [...prev, account]);
-
-    const userData: User = {
-      email: account.email,
-      name: account.name,
-      avatar: account.avatar,
-      role: account.role,
-      specialty: account.specialty,
-    };
-    setUser(userData);
-    localStorage.setItem('shifa_auth', JSON.stringify(userData));
-    return { ok: true };
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('shifa_auth');
-  };
+  const logout = useCallback(async () => {
+    // Clear locally even if the network call fails, so the UI never gets
+    // stuck in a signed-in state the server has already dropped.
+    try {
+      await authApi.logout();
+    } finally {
+      setUser(null);
+    }
+  }, []);
 
   return (
     <AuthContext.Provider value={{
@@ -141,7 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       signup,
       logout,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      isLoading,
     }}>
       {children}
     </AuthContext.Provider>
@@ -155,3 +115,5 @@ export function useAuth() {
   }
   return context;
 }
+
+export type { ApiUser };

@@ -29,11 +29,14 @@ export default function LoginPage() {
 
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('doctor@shifa.com');
-  const [password, setPassword] = useState('doctor123');
+  // Passwords now live in the database as bcrypt hashes — the demo password is
+  // whatever SEED_PASSWORD was set to when seeding, so it can't be prefilled.
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role>('DOCTOR');
 
@@ -42,13 +45,7 @@ export default function LoginPage() {
   const setCredentials = (role: Role) => {
     setSelectedRole(role);
     if (mode === 'login') {
-      if (role === 'SECRETARY') {
-        setEmail('secretary@shifa.com');
-        setPassword('secretary123');
-      } else {
-        setEmail('doctor@shifa.com');
-        setPassword('doctor123');
-      }
+      setEmail(role === 'SECRETARY' ? 'secretary@shifa.com' : 'doctor@shifa.com');
     }
   };
 
@@ -64,27 +61,37 @@ export default function LoginPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (isSignup) {
-      if (!name.trim()) return setError('Veuillez saisir votre nom complet.');
-      if (password.length < 6) return setError('Le mot de passe doit contenir au moins 6 caractères.');
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-      const res = signup({
-        name,
-        email,
-        password,
-        role: selectedRole,
-        specialty: selectedRole === 'DOCTOR' ? specialty : undefined,
-      });
-      if (!res.ok) setError(res.error || "Échec de l'inscription.");
-      return;
+    try {
+      if (isSignup) {
+        if (!name.trim()) return setError('Veuillez saisir votre nom complet.');
+        // Matches the server-side minimum enforced by signupSchema.
+        if (password.length < 8) {
+          return setError('Le mot de passe doit contenir au moins 8 caractères.');
+        }
+
+        const res = await signup({
+          name,
+          email,
+          password,
+          role: selectedRole,
+          specialty: selectedRole === 'DOCTOR' ? specialty : undefined,
+        });
+        if (!res.ok) setError(res.error || "Échec de l'inscription.");
+        return;
+      }
+
+      const res = await login(email, password);
+      if (!res.ok) setError(res.error || 'Identifiants invalides');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const success = login(email, password);
-    if (!success) setError('Identifiants invalides');
   };
 
   return (
@@ -257,9 +264,12 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:brightness-110 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg mt-4"
+                disabled={isSubmitting}
+                className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:brightness-110 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg mt-4 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
               >
-                {isSignup ? "S'inscrire" : 'Se connecter'}
+                {isSubmitting
+                  ? 'Connexion…'
+                  : isSignup ? "S'inscrire" : 'Se connecter'}
                 <ChevronRight size={22} />
               </button>
             </form>
