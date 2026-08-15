@@ -24,9 +24,9 @@
     "noEmit": true
   },
   // Without these, TypeScript defaults to every .ts/.tsx under the project
-  // root — which pulls in api/, a separate Next.js project with its own
+  // root — which pulls in server/, a separate Next.js project with its own
   // tsconfig and its own node_modules. Type-checking it from here fails on
-  // missing @prisma/client types that only exist in api/node_modules.
+  // missing @prisma/client types that only exist in server/node_modules.
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "api"]
+  "exclude": ["node_modules", "dist", "server"]
 }

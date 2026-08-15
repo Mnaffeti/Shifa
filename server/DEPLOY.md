@@ -1,7 +1,14 @@
 # Deploying to Vercel
 
-Two Vercel projects from one repo: the Next.js API (`api/`) and the Vite SPA
-(`Shifa/`). Deploy the API first — the frontend needs its URL.
+Two Vercel projects from one repo: the Next.js backend (`server/`) and the
+Vite SPA (repo root). Deploy the backend first — the frontend needs its URL.
+
+> **Why `server/` and not `api/`?** Vercel's zero-config convention treats a
+> top-level `api/` directory as individual serverless functions. In this repo
+> that made the *frontend* project install the backend's dependencies and
+> type-check every route against the wrong tsconfig, failing the build. The
+> folder name is the whole fix; request paths are still `/api/...`, since
+> those come from `server/app/api/`.
 
 ## 0. Before anything
 
@@ -9,9 +16,7 @@ Two Vercel projects from one repo: the Next.js API (`api/`) and the Vite SPA
 exposed in a shared context. Supabase → Settings → Database → Reset database
 password, then use the new value below.
 
-**Commit `api/`.** It currently sits outside the git repo, so Vercel can't see
-it. From the repo root (`Shifa/`), either move `api/` inside the repo or add it
-as a second root. Verify `api/.env` is NOT committed:
+Verify no env file is committed:
 
 ```bash
 git status --porcelain | grep -i "\.env$"   # must print nothing
@@ -19,7 +24,7 @@ git status --porcelain | grep -i "\.env$"   # must print nothing
 
 ## 1. API project
 
-**New Project** → same repo → **Root Directory: `api`**. Framework preset
+**New Project** → same repo → **Root Directory: `server`**. Framework preset
 Next.js is detected automatically.
 
 Environment variables (Settings → Environment Variables):
@@ -65,8 +70,8 @@ Vercel builds don't run migrations. Push the schema once from your machine,
 pointed at the production database:
 
 ```bash
-cd api
-npx prisma db push          # uses api/.env
+cd server
+npx prisma db push          # uses server/.env
 ```
 
 To create real accounts without the demo patients, register through the app's
