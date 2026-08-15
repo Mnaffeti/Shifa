@@ -365,6 +365,7 @@ function VitalsRow({ vitals, onChange }: { vitals: Vitals; onChange: (v: Vitals)
 function OrdonnanceLine({
   item, onUpdate, onRemove, readOnly,
 }: {
+  key?: string;
   item: OrdonnanceItem;
   onUpdate: (item: OrdonnanceItem) => void;
   onRemove: () => void;
