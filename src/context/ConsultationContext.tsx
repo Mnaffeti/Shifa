@@ -78,29 +78,28 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
   // Draft ids currently being created, so a double render can't create twice.
   const creating = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!isAuthenticated) {
       setConsultations([]);
       setIsLoading(false);
       return;
     }
-
-    let cancelled = false;
     setIsLoading(true);
-
-    consultationsApi.list()
-      .then(({ consultations }) => {
-        if (cancelled) return;
-        setConsultations(consultations);
-        setError(null);
-      })
-      .catch(err => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Chargement impossible');
-      })
-      .finally(() => { if (!cancelled) setIsLoading(false); });
-
-    return () => { cancelled = true; };
+    try {
+      const { consultations } = await consultationsApi.list();
+      setConsultations(consultations);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Chargement impossible');
+    } finally {
+      setIsLoading(false);
+    }
   }, [isAuthenticated]);
+
+  // No in-flight cancellation flag here on purpose. StrictMode mounts effects
+  // twice in development; a cleanup that cancels the first request also
+  // suppressed the second one's result, leaving the list permanently empty.
+  useEffect(() => { void refresh(); }, [refresh]);
 
   // Flush any pending autosaves when the provider unmounts.
   const timers = saveTimers.current;

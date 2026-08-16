@@ -32,29 +32,27 @@ export function ReminderProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!isAuthenticated) {
       setReminders([]);
       setIsLoading(false);
       return;
     }
-
-    let cancelled = false;
     setIsLoading(true);
-
-    remindersApi.list()
-      .then(({ reminders }) => {
-        if (cancelled) return;
-        setReminders(reminders);
-        setError(null);
-      })
-      .catch(err => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Chargement impossible');
-      })
-      .finally(() => { if (!cancelled) setIsLoading(false); });
-
-    return () => { cancelled = true; };
+    try {
+      const { reminders } = await remindersApi.list();
+      setReminders(reminders);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Chargement impossible');
+    } finally {
+      setIsLoading(false);
+    }
   }, [isAuthenticated]);
+
+  // See ConsultationContext: a cancellation flag here loses the result of the
+  // second mount that StrictMode performs in development.
+  useEffect(() => { void refresh(); }, [refresh]);
 
   const addReminder = useCallback(async (input: NewReminder) => {
     const { reminder } = await remindersApi.create(input);

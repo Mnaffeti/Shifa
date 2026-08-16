@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { ArrowRight, ChevronRight, Clock, Settings, Stethoscope, Users } from 'lucide-react';
 import ConsultationPage from './ConsultationPage';
 import PatientPickerModal from './PatientPickerModal';
+import RecentConsultationsPanel from './RecentConsultationsPanel';
 import { useAuth } from '../context/AuthContext';
 import { Appointment, useAppointments } from '../context/AppointmentContext';
-import { Patient } from '../context/PatientContext';
+import { Patient, usePatients } from '../context/PatientContext';
+import { useConsultations } from '../context/ConsultationContext';
 import { longDate, ymd } from '../lib/datetime';
 
 interface Props {
@@ -29,9 +31,12 @@ interface LauncherCard {
 export default function DoctorDashboard({ onNavigate }: Props) {
   const { user } = useAuth();
   const { appointments, addAppointment, setCurrentPatientApt } = useAppointments();
+  const { patients } = usePatients();
+  const { consultations } = useConsultations();
 
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
   const [pickPatientOpen, setPickPatientOpen] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
   // "Dr. Youssef Ben Ali" → "Dr. Youssef"; "Foulena" → "Foulena".
@@ -81,15 +86,13 @@ export default function DoctorDashboard({ onNavigate }: Props) {
     }
   };
 
-  // Reopen the most recent completed consultation; fall back to the planning.
-  const openLastConsultation = () => {
-    const last = appointments
-      .filter(a => a.doctor === user?.name && a.status === 'Completed' && a.date <= ymd(today))
-      .sort((a, b) => b.date.localeCompare(a.date) || b.startTime.localeCompare(a.startTime))[0];
-
-    if (last) setActiveAppointment(last);
-    else onNavigate?.('schedule');
-  };
+  // Only this doctor's records feed the recent-consultations list.
+  const myConsultations = useMemo(() => {
+    const mine = new Set(
+      patients.filter(p => p.assignedDoctor === user?.name).map(p => p.id),
+    );
+    return consultations.filter(c => c.doctor === user?.name || mine.has(c.patientId));
+  }, [consultations, patients, user?.name]);
 
   const cards: LauncherCard[] = [
     {
@@ -104,7 +107,7 @@ export default function DoctorDashboard({ onNavigate }: Props) {
       title: 'Consultations récentes',
       description: 'Retrouver et réviser vos dernières consultations',
       action: 'Voir les consultations',
-      onClick: openLastConsultation,
+      onClick: () => setRecentOpen(true),
     },
     {
       icon: Settings,
@@ -223,6 +226,19 @@ export default function DoctorDashboard({ onNavigate }: Props) {
         onSelect={handleStartConsultation}
         title="Nouvelle consultation"
         subtitle="Choisissez le patient — la consultation démarre à l'heure actuelle"
+      />
+
+      {/* Recent consultations — browse and reopen past records */}
+      <RecentConsultationsPanel
+        open={recentOpen}
+        onClose={() => setRecentOpen(false)}
+        consultations={myConsultations}
+        patients={patients}
+        appointments={appointments}
+        onOpen={apt => {
+          setRecentOpen(false);
+          setActiveAppointment(apt);
+        }}
       />
 
       <AnimatePresence>
