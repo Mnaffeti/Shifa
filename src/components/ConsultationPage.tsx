@@ -3,7 +3,7 @@ import {
   ChevronLeft, ChevronRight, X, Plus, Trash2, Check, CheckCircle2,
   ClipboardList, Stethoscope, ScrollText, Pill, FileText, Save,
   Phone, AlertTriangle, Activity, Heart, Thermometer, Waves, Scale, Ruler,
-  ShieldAlert, Pencil, Clock, Link2, CircleDot,
+  ShieldAlert, Pencil, Clock, Link2, CircleDot, Layers,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Appointment, useAppointments } from '../context/AppointmentContext';
@@ -14,6 +14,8 @@ import { useConsultations, OrdonnanceItem } from '../context/ConsultationContext
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import ConsultationChatbot from './ConsultationChatbot';
+import PrescriptionTemplatePicker from './PrescriptionTemplatePicker';
+import type { TemplateLine } from '../lib/prescriptionTemplates';
 
 interface Props {
   appointment: Appointment;
@@ -209,6 +211,7 @@ export default function ConsultationPage({ appointment, onClose, onNavigate }: P
 
   // saved indicator
   const [savedPulse, setSavedPulse] = useState(false);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const pulse = () => { setSavedPulse(true); setTimeout(() => setSavedPulse(false), 1500); };
 
   if (!consultation) {
@@ -245,6 +248,18 @@ export default function ConsultationPage({ appointment, onClose, onNavigate }: P
       ...c.ordonnance.items,
       { id: uid(), medication: '', dosage: '', frequency: '', duration: '', instructions: '' },
     ]);
+  };
+
+  /**
+   * Appends a template's lines to the prescription. Existing items are kept,
+   * so several templates can be combined; each line stays fully editable.
+   */
+  const applyTemplate = (lines: TemplateLine[]) => {
+    updateOrdonnance(c.id, [
+      ...c.ordonnance.items,
+      ...lines.map(line => ({ ...line, id: uid() })),
+    ]);
+    pulse();
   };
   const updateMed = (item: OrdonnanceItem) => {
     updateOrdonnance(c.id, c.ordonnance.items.map(i => i.id === item.id ? item : i));
@@ -709,12 +724,20 @@ export default function ConsultationPage({ appointment, onClose, onNavigate }: P
                 )}
 
                 {!readOnly && (
-                  <button
-                    onClick={addMed}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border-subtle text-text-muted hover:border-primary/40 hover:text-primary font-medium text-sm transition-all"
-                  >
-                    <Plus size={15} strokeWidth={2} /> Ajouter un médicament
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={addMed}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-border-subtle text-text-muted hover:border-primary/40 hover:text-primary font-medium text-sm transition-all"
+                    >
+                      <Plus size={15} strokeWidth={2} /> Ajouter un médicament
+                    </button>
+                    <button
+                      onClick={() => setTemplatePickerOpen(true)}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-primary/25 bg-primary/[0.04] text-primary font-medium text-sm hover:bg-primary/[0.08] transition-all"
+                    >
+                      <Layers size={15} strokeWidth={1.75} /> Ajouter un traitement type
+                    </button>
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -821,6 +844,14 @@ export default function ConsultationPage({ appointment, onClose, onNavigate }: P
           </div>
         </div>
       </div>
+
+      {/* Prescription templates — common treatments, editable once inserted */}
+      <PrescriptionTemplatePicker
+        isOpen={templatePickerOpen}
+        onClose={() => setTemplatePickerOpen(false)}
+        onApply={applyTemplate}
+        allergies={chart.allergies}
+      />
 
       {/* Clinical assistant — floating chatbot (bottom-left) */}
       <ConsultationChatbot
