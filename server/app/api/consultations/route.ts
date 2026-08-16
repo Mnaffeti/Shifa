@@ -63,6 +63,14 @@ export async function POST(request: Request) {
         include: CONSULTATION_INCLUDE,
       });
       if (existing) return ok({ consultation: serializeConsultation(existing) });
+
+      // Reject an unknown appointment here rather than letting the insert
+      // fail on the foreign key, which would surface as an opaque 500.
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        select: { id: true },
+      });
+      if (!appointment) return fail('Rendez-vous introuvable', 400);
     }
 
     const consultation = await prisma.consultation.create({

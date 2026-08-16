@@ -32,6 +32,7 @@ export default function DoctorDashboard({ onNavigate }: Props) {
 
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
   const [pickPatientOpen, setPickPatientOpen] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   // "Dr. Youssef Ben Ali" → "Dr. Youssef"; "Foulena" → "Foulena".
   const displayName = (() => {
@@ -44,8 +45,9 @@ export default function DoctorDashboard({ onNavigate }: Props) {
   const today = new Date();
 
   // Start a walk-in consultation at the current time.
-  const handleStartConsultation = (patient: Patient) => {
+  const handleStartConsultation = async (patient: Patient) => {
     setPickPatientOpen(false);
+    setStartError(null);
 
     const now = new Date();
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -53,23 +55,30 @@ export default function DoctorDashboard({ onNavigate }: Props) {
     const end = new Date(now.getTime() + 30 * 60 * 1000);
     const endTime = `${pad(end.getHours())}:${pad(end.getMinutes())}`;
 
-    const walkIn: Appointment = {
-      id: Math.random().toString(36).substr(2, 9),
-      patientId: patient.id,
-      patientName: `${patient.firstName} ${patient.lastName}`,
-      doctor: user?.name ?? 'Dr. Youssef',
-      date: ymd(now),
-      startTime,
-      endTime,
-      duration: 30,
-      type: 'Consultation',
-      status: 'Confirmed',
-      notes: 'Consultation rapide (sans rendez-vous)',
-    };
+    try {
+      // Wait for the server's record: it owns the id, and the consultation
+      // opened below references it. Opening with a locally-invented id would
+      // point at an appointment row that was never created.
+      const created = await addAppointment({
+        patientId: patient.id,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        doctor: user?.name ?? 'Dr. Youssef',
+        date: ymd(now),
+        startTime,
+        endTime,
+        duration: 30,
+        type: 'Consultation',
+        status: 'Confirmed',
+        notes: 'Consultation rapide (sans rendez-vous)',
+      });
 
-    addAppointment(walkIn);
-    setCurrentPatientApt(walkIn.id);
-    setActiveAppointment(walkIn);
+      setCurrentPatientApt(created.id);
+      setActiveAppointment(created);
+    } catch (err) {
+      setStartError(
+        err instanceof Error ? err.message : 'Impossible de démarrer la consultation.',
+      );
+    }
   };
 
   // Reopen the most recent completed consultation; fall back to the planning.
@@ -121,6 +130,15 @@ export default function DoctorDashboard({ onNavigate }: Props) {
           <p className="text-[17px] font-normal text-text-muted mt-2">
             Prêt pour votre prochaine consultation ?
           </p>
+
+          {startError && (
+            <p
+              role="alert"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-[14px] bg-rose-50 border border-rose-100 text-[13px] font-medium text-rose-700"
+            >
+              {startError}
+            </p>
+          )}
         </header>
 
         {/* ── Primary action ── */}

@@ -20,7 +20,8 @@ export interface Appointment {
 
 interface AppointmentContextType {
   appointments: Appointment[];
-  addAppointment: (apt: Omit<Appointment, 'id'> & { id?: string }) => Promise<void>;
+  /** Resolves to the server's record — its `id` is authoritative, not any client-supplied one. */
+  addAppointment: (apt: Omit<Appointment, 'id'> & { id?: string }) => Promise<Appointment>;
   updateAppointment: (id: string, apt: Partial<Appointment>) => Promise<void>;
   deleteAppointment: (id: string) => Promise<void>;
   confirmAppointment: (id: string) => Promise<void>;
@@ -99,10 +100,14 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
   }, [appointments, currentPatientAptId]);
 
   const addAppointment = useCallback(async (apt: Omit<Appointment, 'id'> & { id?: string }) => {
-    // The server assigns the id; any client-supplied one is ignored.
+    // The server assigns the id; any client-supplied one is ignored. Callers
+    // must use the returned record — referencing a locally-invented id in a
+    // follow-up request (e.g. opening a consultation) hits a row that does
+    // not exist.
     const { id: _ignored, ...payload } = apt;
     const { appointment } = await appointmentsApi.create(payload);
     setAppointments(prev => [...prev, appointment]);
+    return appointment;
   }, []);
 
   const updateAppointment = useCallback(async (id: string, fields: Partial<Appointment>) => {
