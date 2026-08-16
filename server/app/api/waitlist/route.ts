@@ -24,12 +24,15 @@ export async function GET() {
   }
 }
 
-/** POST — deduped on (name, phone), matching the old localStorage behaviour. */
+/**
+ * POST — deduped on (name, phone), matching the old localStorage behaviour.
+ *
+ * Deliberately unauthenticated: this is how a visitor on the pre-login gate
+ * requests a demo. It only ever writes a name, phone and free-text reason —
+ * it exposes no patient data, and GET still requires a session.
+ */
 export async function POST(request: Request) {
   try {
-    const user = await getSessionUser();
-    if (!user) return unauthorized();
-
     const parsed = await parseBody(request, waitlistSchema);
     if (!parsed.ok) return parsed.response;
 

@@ -1,25 +1,49 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import WaitlistModal from '../components/WaitlistModal';
+import DemoAccessModal from '../components/DemoAccessModal';
+import { waitlistApi } from '../lib/api';
 
 /**
- * Pre-login gate. The first thing an unauthenticated visitor sees: the ShifaPlus
- * wordmark and two centered CTAs — join the waitlist, or discover the demo.
- * A discreet link lets returning users reach the login page.
+ * Pre-login gate. The first thing an unauthenticated visitor sees: the
+ * ShifaPlus wordmark and a single CTA into the demo. A discreet link lets
+ * returning users reach the login page.
  */
 interface Props {
   onLogin: () => void;
 }
 
+/** Credentials for the shared demo account, supplied at build time. */
+const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? 'doctor@shifa.com';
+const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD ?? '';
+
 export default function WelcomeGate({ onLogin }: Props) {
   const { login } = useAuth();
-  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
-  const enterDemo = () => {
-    // Demo signs in with the seeded doctor account so the app is populated.
-    login('doctor@shifa.com', 'doctor123');
+  /**
+   * Records who asked for the demo, then signs them into the shared demo
+   * account. The lead is best-effort: a failure to log it must not stand
+   * between the visitor and the product.
+   */
+  const enterDemo = async ({ name, phone }: { name: string; phone: string }) => {
+    try {
+      await waitlistApi.add({ name, phone, reason: 'Demande de démonstration' });
+    } catch {
+      // Non-blocking by design.
+    }
+
+    if (!DEMO_PASSWORD) {
+      throw new Error(
+        "La démonstration n'est pas configurée. Utilisez « Se connecter ».",
+      );
+    }
+
+    const res = await login(DEMO_EMAIL, DEMO_PASSWORD);
+    if (!res.ok) {
+      throw new Error(res.error ?? "Impossible d'ouvrir la démo.");
+    }
   };
 
   return (
@@ -46,18 +70,10 @@ export default function WelcomeGate({ onLogin }: Props) {
           Rendez-vous récurrents, détection de conflits, et une vue claire pour le médecin comme pour la secrétaire.
         </p>
 
-        {/* Two centered CTAs */}
-        <div className="mt-10 w-full flex flex-col gap-3">
+        <div className="mt-10 w-full">
           <button
-            onClick={() => setWaitlistOpen(true)}
+            onClick={() => setDemoOpen(true)}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-primary text-white text-base font-bold shadow-xl shadow-primary/20 hover:brightness-110 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
-          >
-            Rejoindre la liste d’attente
-            <ArrowRight size={18} strokeWidth={2.5} />
-          </button>
-          <button
-            onClick={enterDemo}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white text-primary text-base font-bold border border-border-subtle hover:border-primary hover:bg-bg-soft/50 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
           >
             <Sparkles size={18} strokeWidth={2} />
             Découvrir la démo
@@ -72,7 +88,11 @@ export default function WelcomeGate({ onLogin }: Props) {
         </p>
       </motion.div>
 
-      <WaitlistModal open={waitlistOpen} onClose={() => setWaitlistOpen(false)} />
+      <DemoAccessModal
+        open={demoOpen}
+        onClose={() => setDemoOpen(false)}
+        onSubmit={enterDemo}
+      />
     </div>
   );
 }
