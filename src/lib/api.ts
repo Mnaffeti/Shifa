@@ -15,7 +15,29 @@ import type { PatientChart, Vitals, ClinicalNote, Attachment } from '../context/
 import type { Consultation } from '../context/ConsultationContext';
 import type { Reminder } from '../context/ReminderContext';
 
-const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:4000').replace(/\/$/, '');
+/**
+ * Where the API lives.
+ *
+ * In production this is empty on purpose: `vercel.json` rewrites /api/* to the
+ * backend deployment, so requests stay on the frontend's own origin and the
+ * session cookie is first-party. Pointing straight at the backend domain makes
+ * it a third-party cookie, which Safari blocks outright and Chrome and Brave
+ * block by default — the user appears logged in, then every call returns 401.
+ *
+ * In development there is no rewrite, so VITE_API_URL points at the local API.
+ */
+const BASE_URL = (() => {
+  const configured = import.meta.env.VITE_API_URL?.trim();
+
+  // A cross-origin absolute URL in production would defeat the rewrite and
+  // reintroduce the third-party cookie, so ignore it there. Development still
+  // honours it, since no rewrite exists locally.
+  if (configured && (import.meta.env.DEV || configured.startsWith('/'))) {
+    return configured.replace(/\/$/, '');
+  }
+
+  return import.meta.env.DEV ? 'http://localhost:4000' : '';
+})();
 
 /** Thrown for any non-2xx response; carries the status so callers can branch. */
 export class ApiError extends Error {

@@ -35,8 +35,16 @@ Environment variables (Settings → Environment Variables):
 | `DIRECT_URL` | Supabase **session-mode pooler** URL, port 5432 |
 | `SESSION_SECRET` | A fresh 64-char secret — *not* the development one |
 | `ALLOWED_ORIGIN` | Frontend URL, e.g. `https://shifa.vercel.app` (no trailing slash) |
-| `CROSS_SITE_COOKIE` | `true` — required, since the two projects are on different domains |
+| `CROSS_SITE_COOKIE` | Leave unset when the frontend rewrites `/api/*` (see below). Only set `true` if the browser talks to the backend domain directly |
 | `SEED_PASSWORD` | Only if you intend to seed demo data |
+
+> **Same-origin API.** The frontend's `vercel.json` rewrites `/api/*` to this
+> backend, so the browser only ever calls its own origin and the session
+> cookie is first-party. Calling the backend domain directly would make that
+> cookie third-party — Safari blocks those outright, Chrome and Brave block
+> them by default, and the symptom is a successful login followed by 401 on
+> every request. If you change the backend URL, update the rewrite
+> destination in the frontend's `vercel.json`.
 
 Generate a production `SESSION_SECRET`:
 
@@ -58,7 +66,9 @@ build `npm run build`, output `dist`.
 
 | Variable | Value |
 | --- | --- |
-| `VITE_API_URL` | `https://<your-api>.vercel.app` (no trailing slash) |
+| `VITE_API_URL` | **Leave unset.** The `vercel.json` rewrite keeps the API same-origin; an absolute cross-origin value is ignored in production builds |
+| `VITE_DEMO_EMAIL` | Demo account for the pre-login gate, e.g. `doctor@shifa.com` |
+| `VITE_DEMO_PASSWORD` | That account's password (whatever `SEED_PASSWORD` was) |
 | `VITE_GROQ_API_KEY` | Only if the consultation chatbot is used |
 
 `VITE_*` values are **baked in at build time**, not read at runtime — changing
@@ -87,9 +97,15 @@ unless `ALLOW_PROD_SEED=true`, since it inserts fictional medical records.
 
 ## Things that actually go wrong
 
-**Logged out on every refresh.** `CROSS_SITE_COOKIE` isn't `true`, so the
-browser drops a `SameSite=Lax` cookie on cross-origin calls. Login appears to
-succeed, then every request is anonymous.
+**Login succeeds, then every request is 401.** The browser is refusing the
+session cookie. With the `/api/*` rewrite in place the cookie is first-party
+and this should not happen; if it does, check that the frontend is calling its
+own origin (Network tab: the request host should be the frontend, not the
+backend) and that no stale `VITE_API_URL` is baked into the build.
+
+A stale cookie from an earlier configuration causes the same symptom in one
+browser while others work — clear `shifa_session` for both domains in
+DevTools → Application → Cookies, then sign in again.
 
 **CORS errors.** `ALLOWED_ORIGIN` must match the frontend origin exactly —
 scheme included, no trailing slash. Vercel *preview* deployments get unique
