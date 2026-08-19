@@ -107,6 +107,24 @@ export interface ApiUser {
   specialty?: string;
 }
 
+export const demoApi = {
+  /** Provisions an isolated demo workspace and signs the visitor into it. */
+  start: (data: { name: string; phone: string; specialty?: string }) =>
+    post<{ user: ApiUser }>('/api/demo/start', data),
+  /** Visitors who opened the demo, most recent first. Requires a session. */
+  leads: () => get<{ leads: DemoLead[] }>('/api/demo/leads'),
+};
+
+export interface DemoLead {
+  id: string;
+  name: string;
+  phone: string;
+  specialty: string | null;
+  visits: number;
+  createdAt: string;
+  lastSeenAt: string;
+}
+
 export const authApi = {
   me: () => get<{ user: ApiUser | null }>('/api/auth/me'),
   login: (email: string, password: string) =>

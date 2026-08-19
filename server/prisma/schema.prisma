@@ -82,9 +82,13 @@ model Account {
   role         UserRole
   avatar       String
   specialty    String?
+  /// True for throwaway accounts provisioned by the demo gate, so they can be
+  /// filtered out of real usage and purged in bulk.
+  isDemo       Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  @@index([isDemo])
   @@map("accounts")
 }
 
@@ -370,6 +374,25 @@ model Reminder {
 }
 
 // ─── Waitlist (was: WaitlistModal localStorage store) ───────────────────────
+
+/// A visitor who asked for the demo from the pre-login gate. Kept separate
+/// from Account so the lead list survives even if the demo account is removed.
+model DemoLead {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String
+  specialty   String?
+  /// The demo account provisioned for this visitor, when one was created.
+  accountId   String?
+  createdAt   DateTime @default(now())
+  /// Bumped every time the same person opens the demo again.
+  lastSeenAt  DateTime @updatedAt
+  visits      Int      @default(1)
+
+  @@unique([name, phone])
+  @@index([createdAt])
+  @@map("demo_leads")
+}
 
 model WaitlistEntry {
   id        String   @id @default(cuid())

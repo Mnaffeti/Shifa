@@ -152,6 +152,14 @@ export const updateReminderSchema = z.object({
   done: z.boolean().optional(),
 });
 
+// Publicly writable (the pre-login demo gate), so every field is length-capped
+// to bound what an anonymous caller can store.
+export const demoStartSchema = z.object({
+  name: z.string().min(2, 'Nom requis').max(120),
+  phone: z.string().min(6, 'Numéro de téléphone requis').max(40),
+  specialty: z.string().max(80).optional(),
+});
+
 // Publicly writable (the pre-login demo form), so every field is length-capped
 // to bound what an anonymous caller can store.
 export const waitlistSchema = z.object({

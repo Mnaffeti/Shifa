@@ -27,14 +27,22 @@ export async function GET() {
  * concurrent creates cannot pick the same number.
  */
 async function nextPatientId(tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) {
-  const last = await tx.patient.findFirst({
+  // Demo workspaces namespace their ids (PT-<ACCOUNT>-01), which sort above
+  // the plain PT-NNN series. Scan the sequential ids only, and take the
+  // highest numeric value rather than trusting lexical order.
+  const rows = await tx.patient.findMany({
     where: { id: { startsWith: 'PT-' } },
-    orderBy: { id: 'desc' },
     select: { id: true },
   });
 
-  const n = last ? Number.parseInt(last.id.slice(3), 10) : 0;
-  return `PT-${String((Number.isNaN(n) ? 0 : n) + 1).padStart(3, '0')}`;
+  const highest = rows.reduce((max, { id }) => {
+    const m = /^PT-(\d+)$/.exec(id);
+    if (!m) return max;
+    const n = Number.parseInt(m[1], 10);
+    return Number.isNaN(n) ? max : Math.max(max, n);
+  }, 0);
+
+  return `PT-${String(highest + 1).padStart(3, '0')}`;
 }
 
 /** POST /api/patients — create a patient file. */

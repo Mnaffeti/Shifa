@@ -28,6 +28,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   /** True while the initial session probe is in flight. */
   isLoading: boolean;
+  /** Re-reads the session from the server, e.g. after the demo signs a visitor in. */
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,6 +86,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const refresh = useCallback(async () => {
+    try {
+      const { user } = await authApi.me();
+      setUser(user as User | null);
+    } catch {
+      setUser(null);
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     // Clear locally even if the network call fails, so the UI never gets
     // stuck in a signed-in state the server has already dropped.
@@ -102,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       isAuthenticated: !!user,
       isLoading,
+      refresh,
     }}>
       {children}
     </AuthContext.Provider>

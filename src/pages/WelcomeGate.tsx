@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import DemoAccessModal from '../components/DemoAccessModal';
-import { waitlistApi } from '../lib/api';
+import { demoApi } from '../lib/api';
 
 /**
  * Pre-login gate. The first thing an unauthenticated visitor sees: the
@@ -14,36 +14,22 @@ interface Props {
   onLogin: () => void;
 }
 
-/** Credentials for the shared demo account, supplied at build time. */
-const DEMO_EMAIL = import.meta.env.VITE_DEMO_EMAIL ?? 'doctor@shifa.com';
-const DEMO_PASSWORD = import.meta.env.VITE_DEMO_PASSWORD ?? '';
-
 export default function WelcomeGate({ onLogin }: Props) {
-  const { login } = useAuth();
+  const { refresh } = useAuth();
   const [demoOpen, setDemoOpen] = useState(false);
 
   /**
-   * Records who asked for the demo, then signs them into the shared demo
-   * account. The lead is best-effort: a failure to log it must not stand
-   * between the visitor and the product.
+   * Provisions an isolated demo workspace for this visitor and signs them in.
+   *
+   * Every visitor gets their own account and their own copy of the two mock
+   * patients, so nobody browses or edits another visitor's records. The
+   * server issues the session cookie; refreshing auth state picks it up.
    */
-  const enterDemo = async ({ name, phone }: { name: string; phone: string }) => {
-    try {
-      await waitlistApi.add({ name, phone, reason: 'Demande de démonstration' });
-    } catch {
-      // Non-blocking by design.
-    }
-
-    if (!DEMO_PASSWORD) {
-      throw new Error(
-        "La démonstration n'est pas configurée. Utilisez « Se connecter ».",
-      );
-    }
-
-    const res = await login(DEMO_EMAIL, DEMO_PASSWORD);
-    if (!res.ok) {
-      throw new Error(res.error ?? "Impossible d'ouvrir la démo.");
-    }
+  const enterDemo = async ({
+    name, phone, specialty,
+  }: { name: string; phone: string; specialty: string }) => {
+    await demoApi.start({ name, phone, specialty });
+    await refresh();
   };
 
   return (

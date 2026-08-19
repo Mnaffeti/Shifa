@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowRight, Phone, Sparkles, User, X } from 'lucide-react';
+import { ArrowRight, Phone, Sparkles, Stethoscope, User, X } from 'lucide-react';
+import { SPECIALTIES } from '../lib/specialties';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   /** Called with the visitor's details once the form validates. */
-  onSubmit: (details: { name: string; phone: string }) => Promise<void> | void;
+  onSubmit: (details: { name: string; phone: string; specialty: string }) => Promise<void> | void;
 }
 
 /**
@@ -18,12 +19,14 @@ interface Props {
 export default function DemoAccessModal({ open, onClose, onSubmit }: Props) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
     setName('');
     setPhone('');
+    setSpecialty(SPECIALTIES[0]);
     setError(null);
     setSubmitting(false);
   };
@@ -52,7 +55,7 @@ export default function DemoAccessModal({ open, onClose, onSubmit }: Props) {
     setError(null);
     setSubmitting(true);
     try {
-      await onSubmit({ name: trimmedName, phone: trimmedPhone });
+      await onSubmit({ name: trimmedName, phone: trimmedPhone, specialty });
       reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible d'ouvrir la démo.");
@@ -151,6 +154,32 @@ export default function DemoAccessModal({ open, onClose, onSubmit }: Props) {
                       placeholder="+216 22 345 678"
                       className="w-full h-12 pl-11 pr-4 rounded-[14px] bg-bg-soft/50 border border-border-subtle text-[15px] font-medium text-text-primary placeholder:text-text-muted placeholder:font-normal focus:outline-none focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all tabular"
                     />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="demo-specialty"
+                    className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary mb-1.5"
+                  >
+                    Spécialité
+                  </label>
+                  <div className="relative">
+                    <Stethoscope
+                      size={17}
+                      strokeWidth={1.75}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                    />
+                    <select
+                      id="demo-specialty"
+                      value={specialty}
+                      onChange={e => setSpecialty(e.target.value)}
+                      className="w-full h-12 pl-11 pr-4 rounded-[14px] bg-bg-soft/50 border border-border-subtle text-[15px] font-medium text-text-primary focus:outline-none focus:bg-white focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all appearance-none cursor-pointer"
+                    >
+                      {SPECIALTIES.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
