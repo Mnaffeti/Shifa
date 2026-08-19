@@ -22,8 +22,10 @@ async function main() {
       'Example: ADMIN_EMAIL="admin@shifa.com" ADMIN_PASSWORD="..." npm run db:create-admin',
     );
   }
-  if (password.length < 12) {
-    throw new Error('ADMIN_PASSWORD must be at least 12 characters.');
+  // 8 is the floor shared with the signup form. This account can read every
+  // prospect's contact details, so prefer a long random secret in production.
+  if (password.length < 8) {
+    throw new Error('ADMIN_PASSWORD must be at least 8 characters.');
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
