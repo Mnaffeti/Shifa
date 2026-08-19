@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { ApiError, authApi, type ApiUser } from '../lib/api';
 
-export type UserRole = 'SECRETARY' | 'DOCTOR';
+export type UserRole = 'SECRETARY' | 'DOCTOR' | 'ADMIN';
 
 interface User {
   email: string;
@@ -15,7 +15,8 @@ export interface SignupData {
   name: string;
   email: string;
   password: string;
-  role: UserRole;
+  /** ADMIN is provisioned server-side, never through the public signup form. */
+  role: Exclude<UserRole, 'ADMIN'>;
   specialty?: string;
 }
 

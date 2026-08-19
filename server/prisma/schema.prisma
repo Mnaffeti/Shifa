@@ -21,6 +21,9 @@ datasource db {
 enum UserRole {
   DOCTOR
   SECRETARY
+  /// Operator of the product, not clinical staff: sees demo visitor leads and
+  /// no patient data.
+  ADMIN
 }
 
 enum PatientStatus {

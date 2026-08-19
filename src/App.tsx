@@ -26,6 +26,8 @@ import SchedulePage from './pages/SchedulePage';
 import PatientsPage from './pages/PatientsPage';
 import SettingsPage from './pages/SettingsPage';
 import SecretaryAppointmentsPage from './pages/SecretaryAppointmentsPage';
+import AdminVisitorsPage from './pages/AdminVisitorsPage';
+import AdminLayout from './components/AdminLayout';
 
 function MainLayout() {
   const { user } = useAuth();
@@ -85,7 +87,7 @@ function MainLayout() {
 }
 
 function AppContent() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
 
   // The session lives in an httpOnly cookie, so on a refresh we can't know if
@@ -105,6 +107,17 @@ function AppContent() {
   if (!isAuthenticated) {
     // Gate first: two centered CTAs. "Se connecter" reveals the login page.
     return showLogin ? <LoginPage /> : <WelcomeGate onLogin={() => setShowLogin(true)} />;
+  }
+
+  // An admin operates the product rather than a practice: no patients, no
+  // schedule. Rendering them outside the clinical providers avoids a burst of
+  // requests for data they are not allowed to read anyway.
+  if (user?.role === 'ADMIN') {
+    return (
+      <AdminLayout>
+        <AdminVisitorsPage />
+      </AdminLayout>
+    );
   }
 
   return (

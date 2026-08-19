@@ -39,12 +39,17 @@ export default function DoctorDashboard({ onNavigate }: Props) {
   const [recentOpen, setRecentOpen] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
-  // "Dr. Youssef Ben Ali" → "Dr. Youssef"; "Foulena" → "Foulena".
+  // First name only, title stripped: "Dr. Youssef Ben Ali" → "Youssef".
+  // The greeting is meant to feel personal, so it drops the honorific that
+  // the rest of the interface still uses.
   const displayName = (() => {
     const name = user?.name?.trim();
     if (!name) return '';
-    const parts = name.split(/\s+/);
-    return /^dr\.?$/i.test(parts[0]) ? parts.slice(0, 2).join(' ') : parts[0];
+    const parts = name.split(/\s+/).filter(Boolean);
+    const withoutTitle = /^(dr|pr|docteur|professeur)\.?$/i.test(parts[0])
+      ? parts.slice(1)
+      : parts;
+    return withoutTitle[0] ?? '';
   })();
 
   const today = new Date();

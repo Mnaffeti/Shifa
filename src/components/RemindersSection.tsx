@@ -5,7 +5,7 @@ import { useReminders } from '../context/ReminderContext';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../context/AuthContext';
 
-const ROLE_META: Record<UserRole, {
+const ROLE_META: Record<Exclude<UserRole, 'ADMIN'>, {
   label: string;
   icon: typeof Stethoscope;
   bar: string;

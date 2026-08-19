@@ -5,19 +5,14 @@ import { fail, forbidden, ok, unauthorized } from '@/lib/api';
 /**
  * GET /api/demo/leads — who opened the demo, most recent first.
  *
- * Requires a real (non-demo) session: a demo visitor must not be able to read
- * the contact details of every other visitor.
+ * ADMIN only. These are contact details of prospects, so neither clinical
+ * staff nor a demo visitor should be able to read the list.
  */
 export async function GET() {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
-
-    const account = await prisma.account.findUnique({
-      where: { id: user.id },
-      select: { isDemo: true },
-    });
-    if (account?.isDemo) return forbidden();
+    if (user.role !== 'ADMIN') return forbidden();
 
     const leads = await prisma.demoLead.findMany({ orderBy: { lastSeenAt: 'desc' } });
 
