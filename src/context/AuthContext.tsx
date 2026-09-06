@@ -17,6 +17,7 @@ export interface SignupData {
   password: string;
   /** ADMIN is provisioned server-side, never through the public signup form. */
   role: Exclude<UserRole, 'ADMIN'>;
+  phone: string;
   specialty?: string;
 }
 
@@ -29,7 +30,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   /** True while the initial session probe is in flight. */
   isLoading: boolean;
-  /** Re-reads the session from the server, e.g. after the demo signs a visitor in. */
+  /** Re-reads the session from the server. */
   refresh: () => Promise<void>;
 }
 
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: data.email.trim().toLowerCase(),
         password: data.password,
         role: data.role,
+        phone: data.phone.trim(),
         specialty: data.role === 'DOCTOR'
           ? (data.specialty?.trim() || 'Médecin généraliste')
           : undefined,

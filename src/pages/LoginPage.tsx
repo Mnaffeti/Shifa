@@ -1,39 +1,28 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, ChevronRight, User, Stethoscope } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ChevronRight, User, Stethoscope, Phone } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
+import { SPECIALTIES } from '../lib/specialties';
 
 type Mode = 'login' | 'signup';
 type Role = 'SECRETARY' | 'DOCTOR';
 
-const SPECIALTIES = [
-  'Médecine générale',
-  'Cardiologie',
-  'Dermatologie',
-  'Gynécologie',
-  'Pédiatrie',
-  'Neurologie',
-  'Ophtalmologie',
-  'ORL',
-  'Orthopédie',
-  'Psychiatrie',
-  'Radiologie',
-  'Endocrinologie',
-  'Gastro-entérologie',
-  'Pneumologie',
-  'Autre',
-];
+interface Props {
+  /** Which tab to open on, chosen by the welcome gate. */
+  initialMode?: Mode;
+}
 
-export default function LoginPage() {
+export default function LoginPage({ initialMode = 'login' }: Props) {
   const { login, signup } = useAuth();
 
-  const [mode, setMode] = useState<Mode>('login');
-  const [email, setEmail] = useState('doctor@shifa.com');
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const [email, setEmail] = useState(initialMode === 'signup' ? '' : 'doctor@shifa.com');
   // Passwords now live in the database as bcrypt hashes — the demo password is
   // whatever SEED_PASSWORD was set to when seeding, so it can't be prefilled.
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
+  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +45,7 @@ export default function LoginPage() {
       setEmail('');
       setPassword('');
       setName('');
+      setPhone('');
     } else {
       setCredentials(selectedRole);
     }
@@ -76,11 +66,17 @@ export default function LoginPage() {
           return setError('Le mot de passe doit contenir au moins 8 caractères.');
         }
 
+        // Permissive on formatting — people write +216, spaces and dashes.
+        if (phone.replace(/[^\d]/g, '').length < 8) {
+          return setError('Veuillez saisir un numéro de téléphone valide.');
+        }
+
         const res = await signup({
           name,
           email,
           password,
           role: selectedRole,
+          phone: phone.trim(),
           specialty: selectedRole === 'DOCTOR' ? specialty : undefined,
         });
         if (!res.ok) setError(res.error || "Échec de l'inscription.");
@@ -177,6 +173,26 @@ export default function LoginPage() {
                       onChange={(e) => setName(e.target.value)}
                       className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
                       placeholder={selectedRole === 'DOCTOR' ? 'Youssef Ben Ali' : 'Foulena Trabelsi'}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Phone — signup only */}
+              {isSignup && (
+                <div>
+                  <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Téléphone</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      autoComplete="tel"
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
+                      placeholder="+216 22 345 678"
                       required
                     />
                   </div>

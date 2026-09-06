@@ -3,10 +3,10 @@ import { getSessionUser } from '@/lib/auth';
 import { fail, forbidden, ok, unauthorized } from '@/lib/api';
 
 /**
- * GET /api/demo/leads — who opened the demo, most recent first.
+ * GET /api/demo/leads — registered doctors, most recently active first.
  *
- * ADMIN only. These are contact details of prospects, so neither clinical
- * staff nor a demo visitor should be able to read the list.
+ * ADMIN only: these are contact details, so clinical staff must not be able
+ * to read the whole list.
  */
 export async function GET() {
   try {
@@ -22,6 +22,7 @@ export async function GET() {
         name: l.name,
         phone: l.phone,
         specialty: l.specialty,
+        email: l.email,
         visits: l.visits,
         createdAt: l.createdAt.toISOString(),
         lastSeenAt: l.lastSeenAt.toISOString(),

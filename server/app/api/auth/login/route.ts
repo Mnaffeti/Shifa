@@ -23,6 +23,17 @@ export async function POST(request: Request) {
     return fail('E-mail ou mot de passe incorrect', 401);
   }
 
+  // Count the sign-in for the back office. Best-effort: never block a valid
+  // login because the activity log could not be updated.
+  try {
+    await prisma.demoLead.updateMany({
+      where: { accountId: account.id },
+      data: { visits: { increment: 1 } },
+    });
+  } catch (err) {
+    console.error('[api/auth/login] visit log failed', err);
+  }
+
   await setSessionCookie(account.id);
   return ok({ user: serializeAccount(account) });
 }

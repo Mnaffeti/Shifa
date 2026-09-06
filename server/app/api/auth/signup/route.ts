@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const parsed = await parseBody(request, signupSchema);
   if (!parsed.ok) return parsed.response;
 
-  const { name, email, password, role, specialty } = parsed.data;
+  const { name, email, password, role, phone, specialty } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
 
   const existing = await prisma.account.findUnique({ where: { email: normalizedEmail } });
@@ -25,10 +25,34 @@ export async function POST(request: Request) {
       passwordHash: await bcrypt.hash(password, 10),
       name: displayName,
       role,
+      phone: phone.trim(),
       specialty: role === 'DOCTOR' ? specialty ?? null : null,
       avatar: `https://picsum.photos/seed/${encodeURIComponent(normalizedEmail)}/100/100`,
     },
   });
+
+  // Registration log for the back office. Best-effort: a signup must not fail
+  // because the analytics row could not be written.
+  try {
+    await prisma.demoLead.upsert({
+      where: { name_phone: { name: displayName, phone: phone.trim() } },
+      create: {
+        name: displayName,
+        phone: phone.trim(),
+        specialty: specialty ?? null,
+        email: normalizedEmail,
+        accountId: account.id,
+      },
+      update: {
+        specialty: specialty ?? null,
+        email: normalizedEmail,
+        accountId: account.id,
+        visits: { increment: 1 },
+      },
+    });
+  } catch (err) {
+    console.error('[api/auth/signup] lead log failed', err);
+  }
 
   await setSessionCookie(account.id);
   return ok({ user: serializeAccount(account) }, 201);

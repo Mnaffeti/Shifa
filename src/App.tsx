@@ -26,7 +26,7 @@ import SchedulePage from './pages/SchedulePage';
 import PatientsPage from './pages/PatientsPage';
 import SettingsPage from './pages/SettingsPage';
 import SecretaryAppointmentsPage from './pages/SecretaryAppointmentsPage';
-import AdminVisitorsPage from './pages/AdminVisitorsPage';
+import AdminAccountsPage from './pages/AdminAccountsPage';
 import AdminLayout from './components/AdminLayout';
 
 function MainLayout() {
@@ -88,7 +88,7 @@ function MainLayout() {
 
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [showLogin, setShowLogin] = useState(false);
+  const [authMode, setAuthMode] = useState<'gate' | 'login' | 'signup'>('gate');
 
   // The session lives in an httpOnly cookie, so on a refresh we can't know if
   // the user is signed in until /api/auth/me answers. Hold the shell until
@@ -105,8 +105,16 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    // Gate first: two centered CTAs. "Se connecter" reveals the login page.
-    return showLogin ? <LoginPage /> : <WelcomeGate onLogin={() => setShowLogin(true)} />;
+    // Gate first; its two CTAs open the auth page on the matching tab.
+    if (authMode === 'gate') {
+      return (
+        <WelcomeGate
+          onLogin={() => setAuthMode('login')}
+          onSignup={() => setAuthMode('signup')}
+        />
+      );
+    }
+    return <LoginPage initialMode={authMode} />;
   }
 
   // An admin operates the product rather than a practice: no patients, no
@@ -115,7 +123,7 @@ function AppContent() {
   if (user?.role === 'ADMIN') {
     return (
       <AdminLayout>
-        <AdminVisitorsPage />
+        <AdminAccountsPage />
       </AdminLayout>
     );
   }

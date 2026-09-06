@@ -21,6 +21,7 @@ export function serializeAccount(a: Account) {
     avatar: a.avatar,
     role: a.role,
     ...(a.specialty ? { specialty: a.specialty } : {}),
+    ...(a.phone ? { phone: a.phone } : {}),
   };
 }
 

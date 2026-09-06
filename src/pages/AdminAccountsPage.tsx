@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Phone, RefreshCw, Search, Stethoscope, Users } from 'lucide-react';
+import { CalendarDays, Mail, Phone, RefreshCw, Search, Stethoscope, Users } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { demoApi, type DemoLead } from '../lib/api';
+import { adminApi, type DemoLead } from '../lib/api';
 import { relativeDay } from '../lib/patientFiles';
 
-/** Admin-only view of everyone who opened the demo from the pre-login gate. */
-export default function AdminVisitorsPage() {
+/** Admin-only back office: every account registered through the signup form. */
+export default function AdminAccountsPage() {
   const [leads, setLeads] = useState<DemoLead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +15,7 @@ export default function AdminVisitorsPage() {
   const load = async () => {
     setIsLoading(true);
     try {
-      const { leads } = await demoApi.leads();
+      const { leads } = await adminApi.leads();
       setLeads(leads);
       setError(null);
     } catch (err) {
@@ -31,7 +31,7 @@ export default function AdminVisitorsPage() {
     const q = query.trim().toLowerCase();
     if (!q) return leads;
     return leads.filter(l =>
-      `${l.name} ${l.phone} ${l.specialty ?? ''}`.toLowerCase().includes(q),
+      `${l.name} ${l.phone} ${l.specialty ?? ''} ${l.email ?? ''}`.toLowerCase().includes(q),
     );
   }, [leads, query]);
 
@@ -46,8 +46,8 @@ export default function AdminVisitorsPage() {
   };
 
   const stats = [
-    { label: 'Visiteurs', value: leads.length, icon: Users },
-    { label: 'Ouvertures totales', value: totalVisits, icon: CalendarDays },
+    { label: 'Inscrits', value: leads.length, icon: Users },
+    { label: 'Connexions totales', value: totalVisits, icon: CalendarDays },
     { label: 'Revenus', value: leads.filter(l => l.visits > 1).length, icon: RefreshCw },
   ];
 
@@ -56,10 +56,10 @@ export default function AdminVisitorsPage() {
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-[30px] font-semibold text-text-primary tracking-tight leading-tight">
-            Visiteurs de la démo
+            Comptes inscrits
           </h1>
           <p className="text-[14px] text-text-muted font-normal mt-1.5">
-            Les médecins qui ont ouvert la démonstration depuis la page d'accueil
+            Les professionnels qui ont créé un compte, et leur activité
           </p>
         </div>
 
@@ -103,7 +103,7 @@ export default function AdminVisitorsPage() {
           type="search"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Rechercher un nom, un téléphone ou une spécialité..."
+          placeholder="Rechercher un nom, un e-mail, un téléphone ou une spécialité..."
           className="w-full h-11 pl-11 pr-4 rounded-[14px] bg-white border border-border-subtle text-[14px] font-normal text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
         />
       </div>
@@ -121,12 +121,12 @@ export default function AdminVisitorsPage() {
             <Users size={20} className="text-text-muted" strokeWidth={1.5} />
           </span>
           <h3 className="text-[15px] font-semibold text-text-primary tracking-tight mt-4">
-            {leads.length === 0 ? 'Aucun visiteur pour le moment' : 'Aucun résultat'}
+            {leads.length === 0 ? 'Aucun compte inscrit' : 'Aucun résultat'}
           </h3>
           <p className="text-[13px] text-text-muted font-normal mt-1.5">
             {leads.length === 0
-              ? 'Les médecins qui ouvrent la démo apparaîtront ici.'
-              : 'Essayez un autre nom, téléphone ou spécialité.'}
+              ? 'Les professionnels qui créent un compte apparaîtront ici.'
+              : 'Essayez un autre nom, e-mail, téléphone ou spécialité.'}
           </p>
         </div>
       ) : (
@@ -147,7 +147,7 @@ export default function AdminVisitorsPage() {
                   </h3>
                   {lead.visits > 1 && (
                     <span className="px-2 py-0.5 rounded-full bg-primary/[0.08] border border-primary/15 text-[10.5px] font-medium text-primary">
-                      {lead.visits} visites
+                      {lead.visits} connexions
                     </span>
                   )}
                 </div>
@@ -157,6 +157,12 @@ export default function AdminVisitorsPage() {
                     <Phone size={12} strokeWidth={1.75} className="text-text-muted shrink-0" />
                     {lead.phone}
                   </span>
+                  {lead.email && (
+                    <span className="inline-flex items-center gap-1.5 text-[12.5px] text-text-secondary font-normal truncate">
+                      <Mail size={12} strokeWidth={1.75} className="text-text-muted shrink-0" />
+                      {lead.email}
+                    </span>
+                  )}
                   {lead.specialty && (
                     <span className="inline-flex items-center gap-1.5 text-[12.5px] text-text-secondary font-normal">
                       <Stethoscope size={12} strokeWidth={1.75} className="text-text-muted shrink-0" />

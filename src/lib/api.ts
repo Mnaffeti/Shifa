@@ -103,15 +103,13 @@ export interface ApiUser {
   email: string;
   name: string;
   avatar: string;
-  role: 'DOCTOR' | 'SECRETARY';
+  role: 'DOCTOR' | 'SECRETARY' | 'ADMIN';
   specialty?: string;
+  phone?: string;
 }
 
-export const demoApi = {
-  /** Provisions an isolated demo workspace and signs the visitor into it. */
-  start: (data: { name: string; phone: string; specialty?: string }) =>
-    post<{ user: ApiUser }>('/api/demo/start', data),
-  /** Visitors who opened the demo, most recent first. Requires a session. */
+/** Back-office view of registered accounts. ADMIN only. */
+export const adminApi = {
   leads: () => get<{ leads: DemoLead[] }>('/api/demo/leads'),
 };
 
@@ -120,6 +118,7 @@ export interface DemoLead {
   name: string;
   phone: string;
   specialty: string | null;
+  email: string | null;
   visits: number;
   createdAt: string;
   lastSeenAt: string;
@@ -131,7 +130,7 @@ export const authApi = {
     post<{ user: ApiUser }>('/api/auth/login', { email, password }),
   signup: (data: {
     name: string; email: string; password: string;
-    role: 'DOCTOR' | 'SECRETARY'; specialty?: string;
+    role: 'DOCTOR' | 'SECRETARY'; phone: string; specialty?: string;
   }) => post<{ user: ApiUser }>('/api/auth/signup', data),
   logout: () => post<{ success: true }>('/api/auth/logout'),
 };

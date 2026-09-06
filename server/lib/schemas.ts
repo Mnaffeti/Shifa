@@ -8,11 +8,13 @@ export const loginSchema = z.object({
 });
 
 export const signupSchema = z.object({
-  name: z.string().min(1, 'Nom requis'),
+  name: z.string().min(2, 'Nom requis').max(120),
   email: z.string().email('Adresse e-mail invalide'),
   password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
+  // ADMIN is provisioned server-side and is never accepted here.
   role: z.enum(['DOCTOR', 'SECRETARY']),
-  specialty: z.string().optional(),
+  phone: z.string().min(6, 'Numéro de téléphone requis').max(40),
+  specialty: z.string().max(80).optional(),
 });
 
 const patientFields = {
@@ -150,14 +152,6 @@ export const updateReminderSchema = z.object({
   text: z.string().min(1).optional(),
   dueTime: z.string().optional(),
   done: z.boolean().optional(),
-});
-
-// Publicly writable (the pre-login demo gate), so every field is length-capped
-// to bound what an anonymous caller can store.
-export const demoStartSchema = z.object({
-  name: z.string().min(2, 'Nom requis').max(120),
-  phone: z.string().min(6, 'Numéro de téléphone requis').max(40),
-  specialty: z.string().max(80).optional(),
 });
 
 // Publicly writable (the pre-login demo form), so every field is length-capped
