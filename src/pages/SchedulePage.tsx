@@ -18,7 +18,7 @@ import {
 import { fr } from 'date-fns/locale';
 import {
   ChevronLeft, ChevronRight, Plus, Clock, CalendarDays, LayoutGrid, CalendarRange,
-  CheckCircle2, RotateCcw, Stethoscope, Activity, Scissors, Ban,
+  CheckCircle2, RotateCcw, Stethoscope, Activity, Scissors, Ban, Pencil,
 } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { useAppointments, Appointment, AppointmentType } from '../context/AppointmentContext';
@@ -93,6 +93,8 @@ export default function SchedulePage() {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('Month');
+  /** Doctors only: turns a click on a RDV into edit instead of consult. */
+  const [manageMode, setManageMode] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | undefined>();
   const [initialModalData, setInitialModalData] = useState<Partial<Appointment>>({});
@@ -126,7 +128,9 @@ export default function SchedulePage() {
   };
 
   const handleAppointmentClick = (apt: Appointment) => {
-    if (user?.role === 'DOCTOR') {
+    // A doctor's normal click starts the consultation; "Gérer" switches the
+    // same click to editing, so both actions stay reachable without a menu.
+    if (user?.role === 'DOCTOR' && !manageMode) {
       if (apt.status === 'Cancelled') return;
       setConsultationApt(apt);
       return;
@@ -212,7 +216,24 @@ export default function SchedulePage() {
               ))}
             </div>
 
-            {user?.role === 'SECRETARY' && (
+            {/* Doctors manage their own agenda too, not just secretaries. */}
+            <button
+              onClick={() => setManageMode(v => !v)}
+              aria-pressed={manageMode}
+              title={manageMode
+                ? "Cliquer un RDV ouvre la consultation"
+                : "Cliquer un RDV ouvre sa fiche (modifier / supprimer)"}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-pill text-sm font-medium transition-all ${
+                manageMode
+                  ? 'bg-primary/[0.08] text-primary border border-primary/20'
+                  : 'text-text-secondary border border-border-subtle hover:text-primary hover:border-accent'
+              }`}
+            >
+              <Pencil size={14} />
+              {manageMode ? 'Mode gestion' : 'Gérer'}
+            </button>
+
+            {(
               <button
                 onClick={() => {
                   setSelectedAppointment(undefined);

@@ -30,6 +30,8 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
   const { addAppointment, updateAppointment, deleteAppointment, appointments } = useAppointments();
   const { patients } = usePatients();
   const [conflict, setConflict] = useState<Appointment | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState<Partial<Appointment>>({
     patientId: '',
@@ -98,21 +100,49 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (conflict) return;
-    if (isEdit && initialData?.id) {
-      updateAppointment(initialData.id, formData);
-    } else {
-      addAppointment(formData as Omit<Appointment, 'id'>);
+  // These writes go to the server, so the modal must wait for them: closing
+  // optimistically would hide a rejection and show the user a success that
+  // never happened.
+  useEffect(() => {
+    if (isOpen) {
+      setError(null);
+      setIsSaving(false);
     }
-    onClose();
+  }, [isOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (conflict || isSaving) return;
+
+    setError(null);
+    setIsSaving(true);
+    try {
+      if (isEdit && initialData?.id) {
+        await updateAppointment(initialData.id, formData);
+      } else {
+        await addAppointment(formData as Omit<Appointment, 'id'>);
+      }
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Enregistrement impossible.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDelete = () => {
-    if (initialData?.id && window.confirm('Supprimer ce rendez-vous ?')) {
-      deleteAppointment(initialData.id);
+  const handleDelete = async () => {
+    if (!initialData?.id || isSaving) return;
+    if (!window.confirm('Supprimer ce rendez-vous ?')) return;
+
+    setError(null);
+    setIsSaving(true);
+    try {
+      await deleteAppointment(initialData.id);
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Suppression impossible.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -217,6 +247,16 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                 </div>
               )}
 
+              {error && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700"
+                >
+                  <AlertTriangle size={16} className="shrink-0 mt-0.5 text-red-500" />
+                  <span className="font-medium">{error}</span>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-text-secondary uppercase mb-1">Notes</label>
                 <textarea
@@ -232,7 +272,8 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                   <button
                     type="button"
                     onClick={handleDelete}
-                    className="px-4 py-2 rounded-btn border border-red-200 text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"
+                    disabled={isSaving}
+                    className="px-4 py-2 rounded-btn border border-red-200 text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <Trash2 size={18} />
                     Supprimer
@@ -248,10 +289,10 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
                   </button>
                   <button
                     type="submit"
-                    disabled={!!conflict}
+                    disabled={!!conflict || isSaving}
                     className="flex-1 px-4 py-2 rounded-btn bg-accent text-primary font-bold shadow-md hover:brightness-110 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100"
                   >
-                    {isEdit ? 'Mettre à jour' : 'Enregistrer'}
+                    {isSaving ? 'Enregistrement…' : isEdit ? 'Mettre à jour' : 'Enregistrer'}
                   </button>
                 </div>
               </div>

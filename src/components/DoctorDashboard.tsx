@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { ArrowRight, ChevronRight, Clock, Settings, Stethoscope, Users } from 'lucide-react';
+import { ArrowRight, CalendarPlus, ChevronRight, Clock, Settings, Stethoscope, Users } from 'lucide-react';
 import ConsultationPage from './ConsultationPage';
 import PatientPickerModal from './PatientPickerModal';
 import RecentConsultationsPanel from './RecentConsultationsPanel';
+import AppointmentFormModal from './AppointmentFormModal';
 import { useAuth } from '../context/AuthContext';
 import { Appointment, useAppointments } from '../context/AppointmentContext';
 import { Patient, usePatients } from '../context/PatientContext';
@@ -25,7 +26,7 @@ interface LauncherCard {
 
 /**
  * The doctor's home screen: a calm launcher, not a data dashboard.
- * One primary action (start a consultation) plus three doors into the
+ * One primary action (start a consultation) plus four doors into the
  * workspace. The patient archive itself lives on the Patients page.
  */
 export default function DoctorDashboard({ onNavigate }: Props) {
@@ -37,6 +38,7 @@ export default function DoctorDashboard({ onNavigate }: Props) {
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
   const [pickPatientOpen, setPickPatientOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
+  const [newRdvOpen, setNewRdvOpen] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
   // First name only, title stripped: "Dr. Youssef Ben Ali" → "Youssef".
@@ -113,6 +115,13 @@ export default function DoctorDashboard({ onNavigate }: Props) {
       description: 'Retrouver et réviser vos dernières consultations',
       action: 'Voir les consultations',
       onClick: () => setRecentOpen(true),
+    },
+    {
+      icon: CalendarPlus,
+      title: 'Rendez-vous',
+      description: 'Planifier un rendez-vous ou consulter votre agenda',
+      action: 'Nouveau rendez-vous',
+      onClick: () => setNewRdvOpen(true),
     },
     {
       icon: Settings,
@@ -193,7 +202,7 @@ export default function DoctorDashboard({ onNavigate }: Props) {
         </button>
 
         {/* ── Three doors ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mt-6">
           {cards.map(card => (
             <button
               key={card.title}
@@ -231,6 +240,12 @@ export default function DoctorDashboard({ onNavigate }: Props) {
         onSelect={handleStartConsultation}
         title="Nouvelle consultation"
         subtitle="Choisissez le patient — la consultation démarre à l'heure actuelle"
+      />
+
+      {/* Create a rendez-vous straight from the dashboard */}
+      <AppointmentFormModal
+        isOpen={newRdvOpen}
+        onClose={() => setNewRdvOpen(false)}
       />
 
       {/* Recent consultations — browse and reopen past records */}
