@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import { User, Bell, Clock, Shield, Camera, Mail, Phone, Globe, Save } from 'lucide-react';
+import { User, Bell, Clock, Shield, Camera, IdCard, Phone, Globe, Save } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 
 export default function SettingsPage() {
-  const { doctor, user } = useAuth();
-  const isSecretary = user?.role === 'SECRETARY';
-  const [activeSection, setActiveSection] = useState(isSecretary ? 'Notifications' : 'Profil');
+  const { user } = useAuth();
+  const [activeSection, setActiveSection] = useState('Profil');
 
   const sections = [
-    { id: 'Profil', icon: User, label: 'Profil', secretaryVisible: false },
-    { id: 'Notifications', icon: Bell, label: 'Notifications', secretaryVisible: true },
-    { id: 'Working Hours', icon: Clock, label: 'Horaires', secretaryVisible: true },
-    { id: 'Security', icon: Shield, label: 'Sécurité', secretaryVisible: true },
-  ].filter(s => !isSecretary || s.secretaryVisible);
+    { id: 'Profil', icon: User, label: 'Profil' },
+    { id: 'Notifications', icon: Bell, label: 'Notifications' },
+    { id: 'Working Hours', icon: Clock, label: 'Horaires' },
+    { id: 'Security', icon: Shield, label: 'Sécurité' },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,7 +40,7 @@ export default function SettingsPage() {
         {/* Content */}
         <div className="bg-white rounded-[24px] shadow-card border border-border-subtle overflow-hidden">
           <div className="p-8">
-            {activeSection === 'Profil' && <ProfileSettings doctor={doctor} />}
+            {activeSection === 'Profil' && <ProfileSettings doctor={user} />}
             {activeSection === 'Notifications' && <NotificationSettings />}
             {activeSection === 'Horaires' && <WorkingHoursSettings />}
             {activeSection === 'Sécurité' && <SecuritySettings />}
@@ -94,10 +93,10 @@ function ProfileSettings({ doctor }: any) {
           </div>
         </div>
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Adresse Email</label>
+          <label className="block text-xs font-bold text-text-secondary uppercase">Matricule</label>
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
-            <input type="email" defaultValue={doctor?.email} className="w-full pl-12 pr-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none" />
+            <IdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
+            <input type="text" defaultValue={doctor?.matricule} disabled className="w-full pl-12 pr-4 py-3 rounded-xl border border-border-subtle bg-bg-soft/50 text-text-muted outline-none cursor-not-allowed" />
           </div>
         </div>
         <div className="space-y-2">

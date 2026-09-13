@@ -138,16 +138,7 @@ async function main() {
     },
     update: {},
   });
-  await prisma.account.upsert({
-    where: { email: 'secretary@shifa.com' },
-    create: {
-      email: 'secretary@shifa.com', passwordHash: hash, name: 'Foulena',
-      role: 'SECRETARY',
-      avatar: 'https://picsum.photos/seed/secretary-sophie/100/100',
-    },
-    update: {},
-  });
-  console.log('  accounts: 2');
+  console.log('  accounts: 1');
 
   // ── Patients + empty charts ──
   for (const p of PATIENTS) {
@@ -218,7 +209,7 @@ async function main() {
   if (await prisma.reminder.count() === 0) {
     await prisma.reminder.createMany({
       data: [
-        { text: 'Transmettre les résultats de laboratoire à Ahmed Mansour', dueTime: '14:00', authorRole: 'SECRETARY', authorName: 'Foulena', done: false },
+        { text: 'Transmettre les résultats de laboratoire à Ahmed Mansour', dueTime: '14:00', authorRole: 'DOCTOR', authorName: 'Dr. Youssef', done: false },
         { text: 'Revoir la posologie avant la prochaine consultation', authorRole: 'DOCTOR', authorName: 'Dr. Youssef', done: false },
       ],
     });

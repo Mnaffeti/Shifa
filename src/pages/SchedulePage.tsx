@@ -118,7 +118,6 @@ export default function SchedulePage() {
   };
 
   const handleSlotClick = (time: string) => {
-    if (user?.role !== 'SECRETARY') return;
     setInitialModalData({
       date: format(currentDate, 'yyyy-MM-dd'),
       startTime: time,
@@ -623,9 +622,7 @@ function DayView({
               <CalendarDays size={22} className="text-text-muted/60" />
             </div>
             <p className="text-sm font-medium text-text-secondary">Aucun rendez-vous ce jour</p>
-            {user?.role === 'SECRETARY' && (
-              <p className="text-xs text-text-muted mt-1">Cliquez sur une heure pour en programmer un</p>
-            )}
+            <p className="text-xs text-text-muted mt-1">Cliquez sur une heure pour en programmer un</p>
           </div>
         ) : null}
 

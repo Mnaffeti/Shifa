@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Check, Copy, IdCard, Phone, Stethoscope, User, X } from 'lucide-react';
+import { IdCard, Phone, Stethoscope, User, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { adminApi, ApiError } from '../lib/api';
 import { SPECIALTIES } from '../lib/specialties';
+import IssuedCredentialsCard from './IssuedCredentialsCard';
 
 interface Props {
   open: boolean;
@@ -30,11 +31,10 @@ export default function CreateDoctorModal({ open, onClose, onCreated }: Props) {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [issued, setIssued] = useState<Issued | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const reset = () => {
     setName(''); setMatricule(''); setSpecialty(SPECIALTIES[0]); setPhone('');
-    setError(''); setIssued(null); setCopied(false);
+    setError(''); setIssued(null);
   };
 
   const handleClose = () => {
@@ -70,18 +70,6 @@ export default function CreateDoctorModal({ open, onClose, onCreated }: Props) {
     }
   };
 
-  const copyCredentials = async () => {
-    if (!issued) return;
-    const text = `Matricule : ${issued.matricule}\nMot de passe temporaire : ${issued.temporaryPassword}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard API unavailable — the admin can still select the text manually.
-    }
-  };
-
   return (
     <AnimatePresence>
       {open && (
@@ -108,41 +96,12 @@ export default function CreateDoctorModal({ open, onClose, onCreated }: Props) {
             </button>
 
             {issued ? (
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 grid place-items-center mb-5">
-                  <Check size={22} className="text-emerald-600" strokeWidth={2.25} />
-                </div>
-                <h2 className="text-xl font-bold text-text-primary tracking-tight">Compte créé</h2>
-                <p className="text-[13.5px] text-text-secondary font-medium mt-1.5">
-                  Transmettez ces identifiants à {issued.name}. Il devra changer ce mot de passe à sa première connexion.
-                </p>
-
-                <div className="mt-5 bg-bg-soft rounded-2xl p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">Matricule</span>
-                    <span className="text-[15px] font-semibold text-text-primary tabular">{issued.matricule}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-text-muted uppercase tracking-widest">Mot de passe</span>
-                    <span className="text-[15px] font-semibold text-text-primary tabular">{issued.temporaryPassword}</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={copyCredentials}
-                  className="w-full mt-4 inline-flex items-center justify-center gap-2 h-12 rounded-2xl border border-border-subtle bg-white text-[13.5px] font-semibold text-text-secondary hover:border-primary hover:text-primary transition-all"
-                >
-                  {copied ? <Check size={16} /> : <Copy size={16} />}
-                  {copied ? 'Copié' : 'Copier les identifiants'}
-                </button>
-
-                <button
-                  onClick={handleClose}
-                  className="w-full mt-2.5 h-12 rounded-2xl bg-primary text-white text-[13.5px] font-bold hover:brightness-110 transition-all"
-                >
-                  Terminé
-                </button>
-              </div>
+              <IssuedCredentialsCard
+                doctorName={issued.name}
+                matricule={issued.matricule}
+                temporaryPassword={issued.temporaryPassword}
+                onDone={handleClose}
+              />
             ) : (
               <div>
                 <h2 className="text-xl font-bold text-text-primary tracking-tight">Créer un compte médecin</h2>

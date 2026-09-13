@@ -27,8 +27,8 @@ export async function GET(request: Request) {
 
     const appointments = await prisma.appointment.findMany({
       where: {
-        // A doctor's schedule is their own; a secretary sees the whole clinic.
-        ...(user.role === 'DOCTOR' ? { doctor: user.name } : {}),
+        // A doctor's schedule is their own — DOCTOR is the only clinical role.
+        doctor: user.name,
         ...(date ? { date } : {}),
         ...(patientId ? { patientId } : {}),
         ...(from || to ? { date: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),

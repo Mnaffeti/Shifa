@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, ChevronRight, IdCard } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ChevronRight, IdCard, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
-
-type Role = 'SECRETARY' | 'DOCTOR';
 
 export default function LoginPage() {
   const { login } = useAuth();
 
+  const [isAdmin, setIsAdmin] = useState(false);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<Role>('DOCTOR');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,34 +56,8 @@ export default function LoginPage() {
                 Bon retour
               </h1>
               <p className="text-base font-medium text-text-secondary">
-                Veuillez sélectionner votre rôle et vous connecter.
+                {isAdmin ? 'Connexion administrateur.' : 'Connectez-vous avec votre matricule.'}
               </p>
-            </div>
-
-            {/* Role Selection */}
-            <div className="flex p-1 bg-bg-soft rounded-2xl mb-8">
-              <button
-                type="button"
-                onClick={() => { setSelectedRole('DOCTOR'); setIdentifier(''); setError(''); }}
-                className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
-                  selectedRole === 'DOCTOR'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Médecin
-              </button>
-              <button
-                type="button"
-                onClick={() => { setSelectedRole('SECRETARY'); setIdentifier(''); setError(''); }}
-                className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
-                  selectedRole === 'SECRETARY'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-text-muted hover:text-text-primary'
-                }`}
-              >
-                Secrétaire
-              </button>
             </div>
 
             {error && (
@@ -102,21 +74,21 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">
-                  {selectedRole === 'DOCTOR' ? 'Matricule' : 'Adresse Email'}
+                  {isAdmin ? 'Adresse Email' : 'Matricule'}
                 </label>
                 <div className="relative">
-                  {selectedRole === 'DOCTOR' ? (
-                    <IdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
-                  ) : (
+                  {isAdmin ? (
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
+                  ) : (
+                    <IdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
                   )}
                   <input
-                    type={selectedRole === 'DOCTOR' ? 'text' : 'email'}
+                    type={isAdmin ? 'email' : 'text'}
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     autoComplete="username"
                     className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
-                    placeholder={selectedRole === 'DOCTOR' ? 'DOC-0001' : 'secretaire@shifa.com'}
+                    placeholder={isAdmin ? 'admin@shifa.com' : 'DOC-0001'}
                     required
                   />
                 </div>
@@ -161,9 +133,6 @@ export default function LoginPage() {
                   </div>
                   <span className="text-sm font-bold text-text-secondary group-hover:text-primary transition-colors">Se souvenir de moi</span>
                 </label>
-                {selectedRole === 'SECRETARY' && (
-                  <a href="#" className="text-sm font-bold text-primary hover:underline">Mot de passe oublié ?</a>
-                )}
               </div>
 
               <button
@@ -176,11 +145,20 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {selectedRole === 'DOCTOR' && (
+            {!isAdmin && (
               <p className="text-center mt-6 text-text-secondary text-xs font-medium">
                 Votre matricule et votre mot de passe vous sont fournis par votre administration.
               </p>
             )}
+
+            <button
+              type="button"
+              onClick={() => { setIsAdmin(!isAdmin); setIdentifier(''); setError(''); }}
+              className="w-full mt-4 inline-flex items-center justify-center gap-1.5 text-[12.5px] font-bold text-text-muted hover:text-primary transition-colors"
+            >
+              <ShieldCheck size={14} />
+              {isAdmin ? 'Connexion médecin' : 'Connexion administrateur'}
+            </button>
           </div>
         </div>
       </motion.div>

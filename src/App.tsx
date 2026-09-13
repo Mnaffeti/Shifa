@@ -14,28 +14,26 @@ import { ReminderProvider } from './context/ReminderContext';
 
 // Components
 import Navbar from './components/Navbar';
-import SecretaryNavbar from './components/SecretaryNavbar';
 import AppointmentModal from './components/AppointmentModal';
 import DoctorDashboard from './components/DoctorDashboard';
-import SecretaryDashboard from './components/SecretaryDashboard';
 
 // Pages
 import LoginPage from './pages/LoginPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import WelcomeGate from './pages/WelcomeGate';
+import DoctorRequestPage from './pages/DoctorRequestPage';
 import SchedulePage from './pages/SchedulePage';
 import PatientsPage from './pages/PatientsPage';
 import SettingsPage from './pages/SettingsPage';
-import SecretaryAppointmentsPage from './pages/SecretaryAppointmentsPage';
 import AdminAccountsPage from './pages/AdminAccountsPage';
 import AdminLayout from './components/AdminLayout';
 
+/** DOCTOR is the only clinical role — there is no more secretary view to branch on. */
 function MainLayout() {
-  const { user } = useAuth();
   const { isModalOpen, setIsModalOpen } = useAppointments();
   const [currentView, setCurrentView] = useState('dashboard');
 
-  const renderDoctorView = () => {
+  const renderView = () => {
     switch (currentView) {
       case 'dashboard': return <DoctorDashboard onNavigate={setCurrentView} />;
       case 'schedule': return <SchedulePage />;
@@ -45,24 +43,9 @@ function MainLayout() {
     }
   };
 
-  const renderSecretaryView = () => {
-    switch (currentView) {
-      case 'dashboard': return <SecretaryDashboard />;
-      case 'appointments': return <SecretaryAppointmentsPage />;
-      case 'patients': return <PatientsPage />;
-      case 'schedule': return <SchedulePage />;
-      case 'settings': return <SettingsPage />;
-      default: return <SecretaryDashboard />;
-    }
-  };
-
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-primary/10 selection:text-primary">
-      {user?.role === 'DOCTOR' ? (
-        <Navbar currentView={currentView} onViewChange={setCurrentView} />
-      ) : (
-        <SecretaryNavbar currentView={currentView} onViewChange={setCurrentView} />
-      )}
+      <Navbar currentView={currentView} onViewChange={setCurrentView} />
 
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-8 py-8">
         <AnimatePresence mode="wait">
@@ -73,7 +56,7 @@ function MainLayout() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
           >
-            {user?.role === 'DOCTOR' ? renderDoctorView() : renderSecretaryView()}
+            {renderView()}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -87,9 +70,11 @@ function MainLayout() {
   );
 }
 
+type GateView = 'gate' | 'login' | 'request';
+
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [showLogin, setShowLogin] = useState(false);
+  const [gateView, setGateView] = useState<GateView>('gate');
 
   // The session lives in an httpOnly cookie, so on a refresh we can't know if
   // the user is signed in until /api/auth/me answers. Hold the shell until
@@ -106,10 +91,19 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    // Gate first; its CTA opens the login page. No self-signup — doctor
-    // accounts are provisioned by the back office.
-    if (!showLogin) {
-      return <WelcomeGate onLogin={() => setShowLogin(true)} />;
+    // Gate first; its two CTAs open the login page or the doctor
+    // account-request form. No self-signup with a password — a doctor
+    // requests an account and an admin issues the credentials.
+    if (gateView === 'gate') {
+      return (
+        <WelcomeGate
+          onLogin={() => setGateView('login')}
+          onRequestAccount={() => setGateView('request')}
+        />
+      );
+    }
+    if (gateView === 'request') {
+      return <DoctorRequestPage onBack={() => setGateView('gate')} />;
     }
     return <LoginPage />;
   }

@@ -26,13 +26,13 @@ export default function PatientsPage() {
   const [pendingDelete, setPendingDelete] = useState<Patient | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
-  const canAddOrEdit = user?.role === 'SECRETARY' || user?.role === 'DOCTOR';
-  const isDoctor = user?.role === 'DOCTOR';
+  // DOCTOR is the only clinical role now — every caller here manages their
+  // own patients.
+  const canAddOrEdit = user?.role === 'DOCTOR';
 
-  // A doctor sees only their own patients; a secretary sees everyone.
   const visiblePatients = useMemo(
-    () => (isDoctor ? patients.filter(p => p.assignedDoctor === user.name) : patients),
-    [patients, isDoctor, user?.name],
+    () => patients.filter(p => p.assignedDoctor === user?.name),
+    [patients, user?.name],
   );
 
   const files = useMemo(
@@ -53,11 +53,7 @@ export default function PatientsPage() {
         onCreatePatient={() => setIsAddModalOpen(true)}
         canCreate={canAddOrEdit}
         onEdit={canAddOrEdit ? (file: PatientFile) => setEditingPatient(file.patient) : undefined}
-        onDelete={
-          user?.role === 'SECRETARY'
-            ? (file: PatientFile) => setPendingDelete(file.patient)
-            : undefined
-        }
+        onDelete={canAddOrEdit ? (file: PatientFile) => setPendingDelete(file.patient) : undefined}
       />
 
       <PatientFormModal

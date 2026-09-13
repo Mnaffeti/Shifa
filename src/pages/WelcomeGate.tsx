@@ -3,17 +3,20 @@ import { ArrowRight } from 'lucide-react';
 
 /**
  * Pre-login gate. The first thing an unauthenticated visitor sees: the
- * ShifaPlus wordmark, what the product does, and the way in.
+ * ShifaPlus wordmark, what the product does, and the two ways in.
  *
- * There is no self-signup: doctor accounts are provisioned by the back
- * office (matricule + temporary password), so this only opens the login page.
+ * There is no self-signup with a password: a doctor requests an account
+ * (name, matricule, specialty, phone) and an admin accepts it from the back
+ * office, which issues the temporary password.
  */
 interface Props {
   /** Opens the login page. */
   onLogin: () => void;
+  /** Opens the doctor account-request form. */
+  onRequestAccount: () => void;
 }
 
-export default function WelcomeGate({ onLogin }: Props) {
+export default function WelcomeGate({ onLogin, onRequestAccount }: Props) {
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
       <motion.div
@@ -35,7 +38,7 @@ export default function WelcomeGate({ onLogin }: Props) {
           La gestion de cabinet, simplifiée.
         </h1>
         <p className="mt-3 text-base font-medium text-text-secondary max-w-[360px]">
-          Rendez-vous récurrents, détection de conflits, et une vue claire pour le médecin comme pour la secrétaire.
+          Rendez-vous récurrents, détection de conflits, et une vue claire de votre cabinet.
         </p>
 
         <div className="mt-10 w-full flex flex-col gap-3">
@@ -45,6 +48,13 @@ export default function WelcomeGate({ onLogin }: Props) {
           >
             Se connecter
             <ArrowRight size={18} strokeWidth={2.5} />
+          </button>
+
+          <button
+            onClick={onRequestAccount}
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white text-primary text-base font-bold border border-border-subtle hover:border-primary hover:bg-bg-soft/50 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
+          >
+            Demander un compte médecin
           </button>
         </div>
 

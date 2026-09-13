@@ -58,13 +58,13 @@ export async function parseBody<T>(
 }
 
 /**
- * A doctor may only reach their own patients; a secretary sees everyone.
- * Centralised so the rule can't drift between routes.
+ * A doctor may only reach their own patients. DOCTOR is the only clinical
+ * role now, so this always scopes to the caller.
  */
 export function patientScope(user: SessionUser) {
-  return user.role === 'DOCTOR' ? { assignedDoctor: user.name } : {};
+  return { assignedDoctor: user.name };
 }
 
 export function canAccessPatient(user: SessionUser, assignedDoctor: string): boolean {
-  return user.role === 'SECRETARY' || assignedDoctor === user.name;
+  return assignedDoctor === user.name;
 }

@@ -57,17 +57,17 @@ export async function PATCH(request: Request, { params }: Params) {
 
 /**
  * Deleting a patient cascades to their chart, appointments and consultations.
- * Restricted to secretaries, matching the permission the UI already enforces.
+ * A doctor may only delete their own patients.
  */
 export async function DELETE(_request: Request, { params }: Params) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
-    if (user.role !== 'SECRETARY') return forbidden();
 
     const { id } = await params;
     const existing = await prisma.patient.findUnique({ where: { id } });
     if (!existing) return notFound('Patient');
+    if (!canAccessPatient(user, existing.assignedDoctor)) return forbidden();
 
     await prisma.patient.delete({ where: { id } });
     return ok({ success: true });

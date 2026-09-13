@@ -8,8 +8,8 @@ import { toDbType } from '../route';
 type Params = { params: Promise<{ id: string }> };
 
 /** A doctor may only touch appointments on their own schedule. */
-function canTouch(role: string, name: string, doctor: string): boolean {
-  return role === 'SECRETARY' || doctor === name;
+function canTouch(name: string, doctor: string): boolean {
+  return doctor === name;
 }
 
 export async function PATCH(request: Request, { params }: Params) {
@@ -20,7 +20,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const { id } = await params;
     const existing = await prisma.appointment.findUnique({ where: { id } });
     if (!existing) return notFound('Rendez-vous');
-    if (!canTouch(user.role, user.name, existing.doctor)) return forbidden();
+    if (!canTouch(user.name, existing.doctor)) return forbidden();
 
     const parsed = await parseBody(request, updateAppointmentSchema);
     if (!parsed.ok) return parsed.response;
@@ -53,7 +53,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     const { id } = await params;
     const existing = await prisma.appointment.findUnique({ where: { id } });
     if (!existing) return notFound('Rendez-vous');
-    if (!canTouch(user.role, user.name, existing.doctor)) return forbidden();
+    if (!canTouch(user.name, existing.doctor)) return forbidden();
 
     await prisma.appointment.delete({ where: { id } });
     return ok({ success: true });

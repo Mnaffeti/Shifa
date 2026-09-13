@@ -104,22 +104,49 @@ export interface ApiUser {
   matricule?: string;
   name: string;
   avatar: string;
-  role: 'DOCTOR' | 'SECRETARY' | 'ADMIN';
+  role: 'DOCTOR' | 'ADMIN';
   specialty?: string;
   phone?: string;
   /** True right after the back office issues a temporary password. */
   mustChangePassword: boolean;
 }
 
+export interface DoctorRequest {
+  id: string;
+  name: string;
+  matricule: string;
+  specialty: string;
+  phone: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  createdAt: string;
+}
+
 /** Back-office view of registered accounts. ADMIN only. */
 export const adminApi = {
   leads: () => get<{ leads: DemoLead[] }>('/api/demo/leads'),
-  /** Creates a doctor account; the temporary password is returned once. */
+  /** Creates a doctor account directly; the temporary password is returned once. */
   createDoctor: (data: { name: string; matricule: string; specialty: string; phone: string }) =>
     post<{
       doctor: { name: string; matricule: string; specialty: string; phone: string };
       temporaryPassword: string;
     }>('/api/admin/doctors', data),
+  doctorRequests: {
+    list: () => get<{ requests: DoctorRequest[] }>('/api/admin/doctor-requests'),
+    /** Accepts a pending request: creates the account and issues a temporary password. */
+    accept: (id: string) =>
+      post<{
+        doctor: { name: string; matricule: string; specialty: string; phone: string };
+        temporaryPassword: string;
+      }>(`/api/admin/doctor-requests/${id}/accept`),
+    reject: (id: string) =>
+      post<{ success: true }>(`/api/admin/doctor-requests/${id}/reject`),
+  },
+};
+
+/** Public: a doctor submits this to request an account; no password is collected. */
+export const doctorRequestApi = {
+  submit: (data: { name: string; matricule: string; specialty: string; phone: string }) =>
+    post<{ request: DoctorRequest }>('/api/doctor-requests', data),
 };
 
 export interface DemoLead {
@@ -135,7 +162,7 @@ export interface DemoLead {
 
 export const authApi = {
   me: () => get<{ user: ApiUser | null }>('/api/auth/me'),
-  /** `identifier` is an e-mail for secretaries/admins, a matricule for doctors. */
+  /** `identifier` is an e-mail for admins, a matricule for doctors. */
   login: (identifier: string, password: string) =>
     post<{ user: ApiUser }>('/api/auth/login', { identifier, password }),
   changePassword: (newPassword: string) =>

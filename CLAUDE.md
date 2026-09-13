@@ -44,6 +44,6 @@ Guidelines:
 
 ## Architecture
 
-- Two roles: `DOCTOR` and `SECRETARY` — guard role-specific UI with `user?.role === 'DOCTOR'`
+- Two roles: `DOCTOR` (the only clinical role; signs in with a matricule) and `ADMIN` (back office — creates doctor accounts and reviews doctor account requests, no patient data)
 - Contexts: `AuthContext`, `AppointmentContext`, `PatientContext`, `ChartContext`, `ConsultationContext`
 - Wrap order in App.tsx: `ChartProvider > ConsultationProvider > PatientProvider > AppointmentProvider`

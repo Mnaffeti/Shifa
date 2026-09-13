@@ -142,15 +142,13 @@ export default function RightPanel({ onPatientClick }: Props) {
         </p>
       )}
 
-      {user?.role === 'SECRETARY' && (
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-border-subtle text-text-muted hover:border-accent hover:bg-accent/10 hover:text-primary transition-all duration-200 group"
-        >
-          <Plus size={15} className="group-hover:rotate-90 transition-transform duration-300" />
-          <span className="text-sm font-medium">Ajouter un rendez-vous</span>
-        </button>
-      )}
+      <button
+        onClick={() => setIsModalOpen(true)}
+        className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-dashed border-border-subtle text-text-muted hover:border-accent hover:bg-accent/10 hover:text-primary transition-all duration-200 group"
+      >
+        <Plus size={15} className="group-hover:rotate-90 transition-transform duration-300" />
+        <span className="text-sm font-medium">Ajouter un rendez-vous</span>
+      </button>
     </div>
   );
 }

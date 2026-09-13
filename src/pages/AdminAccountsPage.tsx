@@ -5,6 +5,7 @@ import { fr } from 'date-fns/locale';
 import { adminApi, type DemoLead } from '../lib/api';
 import { relativeDay } from '../lib/patientFiles';
 import CreateDoctorModal from '../components/CreateDoctorModal';
+import DoctorRequestsSection from '../components/DoctorRequestsSection';
 
 /** Admin-only back office: registered accounts, and the doctor-provisioning tool. */
 export default function AdminAccountsPage() {
@@ -89,6 +90,8 @@ export default function AdminAccountsPage() {
         onClose={() => setIsCreateOpen(false)}
         onCreated={load}
       />
+
+      <DoctorRequestsSection onAccepted={load} />
 
       {/* Counters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">

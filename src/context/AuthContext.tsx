@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { ApiError, authApi, type ApiUser } from '../lib/api';
 
-export type UserRole = 'SECRETARY' | 'DOCTOR' | 'ADMIN';
+export type UserRole = 'DOCTOR' | 'ADMIN';
 
 interface User {
   email?: string;

@@ -2,16 +2,16 @@ import { z } from 'zod';
 
 /** Request-body schemas. Mirrors the field sets the frontend forms already send. */
 
-// Doctors sign in with their matricule; secretaries and admins with e-mail.
-// `identifier` carries whichever one the login form collected.
+// Doctors sign in with their matricule; admins with e-mail. `identifier`
+// carries whichever one the login form collected.
 export const loginSchema = z.object({
   identifier: z.string().min(1, 'Identifiant requis'),
   password: z.string().min(1, 'Mot de passe requis'),
 });
 
-// Back office: creates a doctor account and issues a temporary password the
-// admin relays to the doctor (matricule + password), who must change it on
-// first login.
+// Back office: creates a doctor account directly and issues a temporary
+// password the admin relays to the doctor (matricule + password), who must
+// change it on first login.
 export const adminCreateDoctorSchema = z.object({
   name: z.string().min(2, 'Nom requis').max(120),
   matricule: z.string().min(2, 'Matricule requis').max(40),
@@ -21,6 +21,16 @@ export const adminCreateDoctorSchema = z.object({
 
 export const changePasswordSchema = z.object({
   newPassword: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
+});
+
+// Public: a doctor requests an account. No password is collected — an admin
+// reviews the request and, on acceptance, the server creates the account and
+// issues a temporary password.
+export const doctorRequestSchema = z.object({
+  name: z.string().min(2, 'Nom requis').max(120),
+  matricule: z.string().min(2, 'Matricule requis').max(40),
+  specialty: z.string().min(1, 'Spécialité requise').max(80),
+  phone: z.string().min(6, 'Numéro de téléphone requis').max(40),
 });
 
 const patientFields = {
@@ -150,7 +160,7 @@ export const addendumSchema = z.object({
 export const createReminderSchema = z.object({
   text: z.string().min(1),
   dueTime: z.string().optional(),
-  authorRole: z.enum(['DOCTOR', 'SECRETARY']),
+  authorRole: z.literal('DOCTOR'),
   authorName: z.string().min(1),
 });
 

@@ -1,31 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Stethoscope, Headset, Plus, Check, Clock, Trash2, BellRing } from 'lucide-react';
+import { Stethoscope, Plus, Check, Clock, Trash2, BellRing } from 'lucide-react';
 import { useReminders } from '../context/ReminderContext';
 import { useAuth } from '../context/AuthContext';
-import type { UserRole } from '../context/AuthContext';
 
-const ROLE_META: Record<Exclude<UserRole, 'ADMIN'>, {
-  label: string;
-  icon: typeof Stethoscope;
-  bar: string;
-  block: string;
-  chip: string;
-}> = {
-  DOCTOR: {
-    label: 'Médecin',
-    icon: Stethoscope,
-    bar: 'bg-primary',
-    block: 'bg-primary text-white',
-    chip: 'bg-primary/10 text-primary',
-  },
-  SECRETARY: {
-    label: 'Secrétariat',
-    icon: Headset,
-    bar: 'bg-amber',
-    block: 'bg-amber-100 text-amber-700',
-    chip: 'bg-amber-100 text-amber-700',
-  },
+/** DOCTOR is the only role that ever reaches this board. */
+const AUTHOR_META = {
+  label: 'Médecin',
+  icon: Stethoscope,
+  bar: 'bg-primary',
+  block: 'bg-primary text-white',
+  chip: 'bg-primary/10 text-primary',
 };
 
 export default function RemindersSection() {
@@ -106,7 +91,7 @@ export default function RemindersSection() {
         <ul className="flex flex-col">
           <AnimatePresence initial={false}>
             {reminders.map((r, i) => {
-              const meta = ROLE_META[r.authorRole];
+              const meta = AUTHOR_META;
               const Icon = meta.icon;
               return (
                 <motion.li

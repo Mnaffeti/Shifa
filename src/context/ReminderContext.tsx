@@ -7,7 +7,7 @@ export interface Reminder {
   id: string;
   text: string;
   dueTime?: string;          // "HH:MM"
-  authorRole: UserRole;      // who created it — DOCTOR or SECRETARY
+  authorRole: UserRole;      // who created it
   authorName: string;
   done: boolean;
   createdAt: string;         // ISO datetime

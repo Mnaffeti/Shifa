@@ -36,8 +36,8 @@ npm run dev         # http://localhost:4000
 
 Verify with `curl http://localhost:4000/api/health` → `{"status":"ok","database":"connected"}`.
 
-Demo accounts after seeding: `doctor@shifa.com` and `secretary@shifa.com`,
-both with whatever you set as `SEED_PASSWORD`.
+Demo account after seeding: matricule `DOC-0001`, with whatever you set as
+`SEED_PASSWORD`.
 
 ## Endpoints
 
@@ -55,10 +55,11 @@ both with whatever you set as `SEED_PASSWORD`.
 
 ## Behaviour worth knowing
 
-**Access control.** A doctor sees only patients where `assignedDoctor` matches
-their name; a secretary sees everyone. Deleting a patient is secretary-only.
-Signing and unlocking a consultation is doctor-only. These rules live in
-`lib/api.ts` (`patientScope`, `canAccessPatient`) so they can't drift apart.
+**Access control.** DOCTOR is the only clinical role: a doctor sees, edits and
+deletes only patients where `assignedDoctor` matches their name, and only
+appointments on their own schedule. Signing and unlocking a consultation is
+doctor-only. These rules live in `lib/api.ts` (`patientScope`,
+`canAccessPatient`) so they can't drift apart.
 
 **Signed consultations are immutable.** `PATCH /api/consultations/:id` returns
 409 once a consultation is signed. Amend it with `POST .../addenda` (preserves

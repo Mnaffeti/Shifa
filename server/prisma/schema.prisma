@@ -20,10 +20,15 @@ datasource db {
 
 enum UserRole {
   DOCTOR
-  SECRETARY
   /// Operator of the product, not clinical staff: sees demo visitor leads and
   /// no patient data.
   ADMIN
+}
+
+enum DoctorRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 enum PatientStatus {
@@ -78,11 +83,11 @@ enum AttachmentKind {
 
 model Account {
   id           String   @id @default(cuid())
-  /// Secretaries and admins sign in with e-mail; doctors sign in with
-  /// matricule instead, so this is optional now.
+  /// Admins sign in with e-mail; doctors sign in with matricule instead, so
+  /// this is optional now.
   email        String?  @unique
   /// Doctor's staff id, assigned by the back office. Their sign-in identifier
-  /// in place of e-mail — never set for secretaries or admins.
+  /// in place of e-mail — never set for admins.
   matricule    String?  @unique
   /// bcrypt hash — never the plaintext password the old localStorage kept.
   passwordHash String
@@ -412,4 +417,22 @@ model WaitlistEntry {
 
   @@unique([name, phone])
   @@map("waitlist_entries")
+}
+
+// ─── Doctor account requests ────────────────────────────────────────────────
+
+/// A doctor's public request for an account. No password is collected here —
+/// an admin reviews it in the back office and, on acceptance, the server
+/// creates the Account and issues a temporary password.
+model DoctorRequest {
+  id        String              @id @default(cuid())
+  name      String
+  matricule String
+  specialty String
+  phone     String
+  status    DoctorRequestStatus @default(PENDING)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@map("doctor_requests")
 }
