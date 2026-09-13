@@ -9,10 +9,14 @@ export async function POST(request: Request) {
   const parsed = await parseBody(request, loginSchema);
   if (!parsed.ok) return parsed.response;
 
-  const { email, password } = parsed.data;
-  const account = await prisma.account.findUnique({
-    where: { email: email.toLowerCase().trim() },
-  });
+  const { identifier, password } = parsed.data;
+  const trimmed = identifier.trim();
+
+  // Doctors sign in with their matricule; everyone else with e-mail. An
+  // e-mail-shaped identifier looks up by email, anything else by matricule.
+  const account = trimmed.includes('@')
+    ? await prisma.account.findUnique({ where: { email: trimmed.toLowerCase() } })
+    : await prisma.account.findUnique({ where: { matricule: trimmed } });
 
   // Always run a hash comparison, even when the account is missing, so the
   // response time doesn't reveal which e-mail addresses exist.
@@ -20,7 +24,7 @@ export async function POST(request: Request) {
   const valid = await bcrypt.compare(password, hash);
 
   if (!account || !valid) {
-    return fail('E-mail ou mot de passe incorrect', 401);
+    return fail('Identifiant ou mot de passe incorrect', 401);
   }
 
   // Count the sign-in for the back office. Best-effort: never block a valid

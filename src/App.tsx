@@ -21,6 +21,7 @@ import SecretaryDashboard from './components/SecretaryDashboard';
 
 // Pages
 import LoginPage from './pages/LoginPage';
+import ChangePasswordPage from './pages/ChangePasswordPage';
 import WelcomeGate from './pages/WelcomeGate';
 import SchedulePage from './pages/SchedulePage';
 import PatientsPage from './pages/PatientsPage';
@@ -88,7 +89,7 @@ function MainLayout() {
 
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [authMode, setAuthMode] = useState<'gate' | 'login' | 'signup'>('gate');
+  const [showLogin, setShowLogin] = useState(false);
 
   // The session lives in an httpOnly cookie, so on a refresh we can't know if
   // the user is signed in until /api/auth/me answers. Hold the shell until
@@ -105,16 +106,18 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    // Gate first; its two CTAs open the auth page on the matching tab.
-    if (authMode === 'gate') {
-      return (
-        <WelcomeGate
-          onLogin={() => setAuthMode('login')}
-          onSignup={() => setAuthMode('signup')}
-        />
-      );
+    // Gate first; its CTA opens the login page. No self-signup — doctor
+    // accounts are provisioned by the back office.
+    if (!showLogin) {
+      return <WelcomeGate onLogin={() => setShowLogin(true)} />;
     }
-    return <LoginPage initialMode={authMode} />;
+    return <LoginPage />;
+  }
+
+  // A back-office-issued temporary password must be replaced before the
+  // account can do anything else.
+  if (user?.mustChangePassword) {
+    return <ChangePasswordPage />;
   }
 
   // An admin operates the product rather than a practice: no patients, no

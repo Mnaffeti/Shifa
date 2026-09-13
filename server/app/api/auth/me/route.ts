@@ -11,11 +11,13 @@ export async function GET() {
 
   return ok({
     user: {
-      email: user.email,
+      ...(user.email ? { email: user.email } : {}),
+      ...(user.matricule ? { matricule: user.matricule } : {}),
       name: user.name,
       avatar: user.avatar,
       role: user.role,
       ...(user.specialty ? { specialty: user.specialty } : {}),
+      mustChangePassword: user.mustChangePassword,
     },
   });
 }

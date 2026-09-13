@@ -1,8 +1,7 @@
 /**
- * Creates (or updates) the admin account used to view demo visitors.
- *
- * Admins cannot be self-registered — the public signup endpoint only accepts
- * DOCTOR and SECRETARY — so this script is the way to provision one.
+ * Creates (or updates) the admin account used to view demo visitors and
+ * provision doctor accounts. There is no public signup — this script is the
+ * only way to create one.
  *
  *   ADMIN_EMAIL="you@example.com" ADMIN_PASSWORD="..." npm run db:create-admin
  */

@@ -2,19 +2,25 @@ import { z } from 'zod';
 
 /** Request-body schemas. Mirrors the field sets the frontend forms already send. */
 
+// Doctors sign in with their matricule; secretaries and admins with e-mail.
+// `identifier` carries whichever one the login form collected.
 export const loginSchema = z.object({
-  email: z.string().email('Adresse e-mail invalide'),
+  identifier: z.string().min(1, 'Identifiant requis'),
   password: z.string().min(1, 'Mot de passe requis'),
 });
 
-export const signupSchema = z.object({
+// Back office: creates a doctor account and issues a temporary password the
+// admin relays to the doctor (matricule + password), who must change it on
+// first login.
+export const adminCreateDoctorSchema = z.object({
   name: z.string().min(2, 'Nom requis').max(120),
-  email: z.string().email('Adresse e-mail invalide'),
-  password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
-  // ADMIN is provisioned server-side and is never accepted here.
-  role: z.enum(['DOCTOR', 'SECRETARY']),
+  matricule: z.string().min(2, 'Matricule requis').max(40),
+  specialty: z.string().min(1, 'Spécialité requise').max(80),
   phone: z.string().min(6, 'Numéro de téléphone requis').max(40),
-  specialty: z.string().max(80).optional(),
+});
+
+export const changePasswordSchema = z.object({
+  newPassword: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
 });
 
 const patientFields = {

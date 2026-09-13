@@ -4,28 +4,20 @@ import { ApiError, authApi, type ApiUser } from '../lib/api';
 export type UserRole = 'SECRETARY' | 'DOCTOR' | 'ADMIN';
 
 interface User {
-  email: string;
+  email?: string;
+  matricule?: string;
   name: string;
   avatar: string;
   role: UserRole;
   specialty?: string;
-}
-
-export interface SignupData {
-  name: string;
-  email: string;
-  password: string;
-  /** ADMIN is provisioned server-side, never through the public signup form. */
-  role: Exclude<UserRole, 'ADMIN'>;
-  phone: string;
-  specialty?: string;
+  mustChangePassword: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   /** Async: credentials are verified by the server, not in the browser. */
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  signup: (data: SignupData) => Promise<{ ok: boolean; error?: string }>;
+  login: (identifier: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   /** True while the initial session probe is in flight. */
@@ -54,9 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (identifier: string, password: string) => {
     try {
-      const { user } = await authApi.login(email, password);
+      const { user } = await authApi.login(identifier, password);
       setUser(user as User);
       return { ok: true };
     } catch (err) {
@@ -67,24 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const signup = useCallback(async (data: SignupData) => {
+  const changePassword = useCallback(async (newPassword: string) => {
     try {
-      const { user } = await authApi.signup({
-        name: data.name.trim(),
-        email: data.email.trim().toLowerCase(),
-        password: data.password,
-        role: data.role,
-        phone: data.phone.trim(),
-        specialty: data.role === 'DOCTOR'
-          ? (data.specialty?.trim() || 'Médecin généraliste')
-          : undefined,
-      });
-      setUser(user as User);
+      await authApi.changePassword(newPassword);
+      setUser(prev => prev ? { ...prev, mustChangePassword: false } : prev);
       return { ok: true };
     } catch (err) {
       const message = err instanceof ApiError
         ? err.message
-        : 'Création du compte impossible. Réessayez.';
+        : 'Changement de mot de passe impossible. Réessayez.';
       return { ok: false, error: message };
     }
   }, []);
@@ -112,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user,
       login,
-      signup,
+      changePassword,
       logout,
       isAuthenticated: !!user,
       isLoading,

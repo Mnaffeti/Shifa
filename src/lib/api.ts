@@ -100,17 +100,26 @@ const del = <T>(path: string) => request<T>(path, { method: 'DELETE' });
 // ─── Auth ───────────────────────────────────────────────────────────────────
 
 export interface ApiUser {
-  email: string;
+  email?: string;
+  matricule?: string;
   name: string;
   avatar: string;
   role: 'DOCTOR' | 'SECRETARY' | 'ADMIN';
   specialty?: string;
   phone?: string;
+  /** True right after the back office issues a temporary password. */
+  mustChangePassword: boolean;
 }
 
 /** Back-office view of registered accounts. ADMIN only. */
 export const adminApi = {
   leads: () => get<{ leads: DemoLead[] }>('/api/demo/leads'),
+  /** Creates a doctor account; the temporary password is returned once. */
+  createDoctor: (data: { name: string; matricule: string; specialty: string; phone: string }) =>
+    post<{
+      doctor: { name: string; matricule: string; specialty: string; phone: string };
+      temporaryPassword: string;
+    }>('/api/admin/doctors', data),
 };
 
 export interface DemoLead {
@@ -126,12 +135,11 @@ export interface DemoLead {
 
 export const authApi = {
   me: () => get<{ user: ApiUser | null }>('/api/auth/me'),
-  login: (email: string, password: string) =>
-    post<{ user: ApiUser }>('/api/auth/login', { email, password }),
-  signup: (data: {
-    name: string; email: string; password: string;
-    role: 'DOCTOR' | 'SECRETARY'; phone: string; specialty?: string;
-  }) => post<{ user: ApiUser }>('/api/auth/signup', data),
+  /** `identifier` is an e-mail for secretaries/admins, a matricule for doctors. */
+  login: (identifier: string, password: string) =>
+    post<{ user: ApiUser }>('/api/auth/login', { identifier, password }),
+  changePassword: (newPassword: string) =>
+    post<{ success: true }>('/api/auth/change-password', { newPassword }),
   logout: () => post<{ success: true }>('/api/auth/logout'),
 };
 

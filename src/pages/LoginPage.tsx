@@ -1,55 +1,20 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, ChevronRight, User, Stethoscope, Phone } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ChevronRight, IdCard } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
-import { SPECIALTIES } from '../lib/specialties';
 
-type Mode = 'login' | 'signup';
 type Role = 'SECRETARY' | 'DOCTOR';
 
-interface Props {
-  /** Which tab to open on, chosen by the welcome gate. */
-  initialMode?: Mode;
-}
+export default function LoginPage() {
+  const { login } = useAuth();
 
-export default function LoginPage({ initialMode = 'login' }: Props) {
-  const { login, signup } = useAuth();
-
-  const [mode, setMode] = useState<Mode>(initialMode);
-  const [email, setEmail] = useState(initialMode === 'signup' ? '' : 'doctor@shifa.com');
-  // Passwords now live in the database as bcrypt hashes — the demo password is
-  // whatever SEED_PASSWORD was set to when seeding, so it can't be prefilled.
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
-  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role>('DOCTOR');
-
-  const isSignup = mode === 'signup';
-
-  const setCredentials = (role: Role) => {
-    setSelectedRole(role);
-    if (mode === 'login') {
-      setEmail(role === 'SECRETARY' ? 'secretary@shifa.com' : 'doctor@shifa.com');
-    }
-  };
-
-  const switchMode = (next: Mode) => {
-    setMode(next);
-    setError('');
-    if (next === 'signup') {
-      setEmail('');
-      setPassword('');
-      setName('');
-      setPhone('');
-    } else {
-      setCredentials(selectedRole);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,31 +24,7 @@ export default function LoginPage({ initialMode = 'login' }: Props) {
     setIsSubmitting(true);
 
     try {
-      if (isSignup) {
-        if (!name.trim()) return setError('Veuillez saisir votre nom complet.');
-        // Matches the server-side minimum enforced by signupSchema.
-        if (password.length < 8) {
-          return setError('Le mot de passe doit contenir au moins 8 caractères.');
-        }
-
-        // Permissive on formatting — people write +216, spaces and dashes.
-        if (phone.replace(/[^\d]/g, '').length < 8) {
-          return setError('Veuillez saisir un numéro de téléphone valide.');
-        }
-
-        const res = await signup({
-          name,
-          email,
-          password,
-          role: selectedRole,
-          phone: phone.trim(),
-          specialty: selectedRole === 'DOCTOR' ? specialty : undefined,
-        });
-        if (!res.ok) setError(res.error || "Échec de l'inscription.");
-        return;
-      }
-
-      const res = await login(email, password);
+      const res = await login(identifier.trim(), password);
       if (!res.ok) setError(res.error || 'Identifiants invalides');
     } finally {
       setIsSubmitting(false);
@@ -114,12 +55,10 @@ export default function LoginPage({ initialMode = 'login' }: Props) {
 
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-text-primary mb-2 font-heading tracking-tight leading-tight">
-                {isSignup ? 'Créer un compte' : 'Bon retour'}
+                Bon retour
               </h1>
               <p className="text-base font-medium text-text-secondary">
-                {isSignup
-                  ? 'Sélectionnez votre rôle et renseignez vos informations.'
-                  : 'Veuillez sélectionner votre rôle et vous connecter.'}
+                Veuillez sélectionner votre rôle et vous connecter.
               </p>
             </div>
 
@@ -127,7 +66,7 @@ export default function LoginPage({ initialMode = 'login' }: Props) {
             <div className="flex p-1 bg-bg-soft rounded-2xl mb-8">
               <button
                 type="button"
-                onClick={() => setCredentials('DOCTOR')}
+                onClick={() => { setSelectedRole('DOCTOR'); setIdentifier(''); setError(''); }}
                 className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   selectedRole === 'DOCTOR'
                     ? 'bg-white text-primary shadow-sm'
@@ -138,7 +77,7 @@ export default function LoginPage({ initialMode = 'login' }: Props) {
               </button>
               <button
                 type="button"
-                onClick={() => setCredentials('SECRETARY')}
+                onClick={() => { setSelectedRole('SECRETARY'); setIdentifier(''); setError(''); }}
                 className={`flex-1 py-3 rounded-xl text-base font-bold transition-all ${
                   selectedRole === 'SECRETARY'
                     ? 'bg-white text-primary shadow-sm'
@@ -161,75 +100,23 @@ export default function LoginPage({ initialMode = 'login' }: Props) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Full name — signup only */}
-              {isSignup && (
-                <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Nom complet</label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
-                      placeholder={selectedRole === 'DOCTOR' ? 'Youssef Ben Ali' : 'Foulena Trabelsi'}
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Phone — signup only */}
-              {isSignup && (
-                <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Téléphone</label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
-                    <input
-                      type="tel"
-                      inputMode="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      autoComplete="tel"
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
-                      placeholder="+216 22 345 678"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Specialty — signup + doctor only */}
-              {isSignup && selectedRole === 'DOCTOR' && (
-                <div>
-                  <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Spécialité</label>
-                  <div className="relative">
-                    <Stethoscope className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted z-10" size={20} />
-                    <select
-                      value={specialty}
-                      onChange={(e) => setSpecialty(e.target.value)}
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30 appearance-none cursor-pointer"
-                      required
-                    >
-                      {SPECIALTIES.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-
               <div>
-                <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">Adresse Email</label>
+                <label className="block text-xs font-bold text-text-secondary uppercase mb-2 tracking-widest ml-1">
+                  {selectedRole === 'DOCTOR' ? 'Matricule' : 'Adresse Email'}
+                </label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
+                  {selectedRole === 'DOCTOR' ? (
+                    <IdCard className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
+                  ) : (
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={20} />
+                  )}
                   <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type={selectedRole === 'DOCTOR' ? 'text' : 'email'}
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     autoComplete="username"
                     className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
-                    placeholder="medecin@shifa.com"
+                    placeholder={selectedRole === 'DOCTOR' ? 'DOC-0001' : 'secretaire@shifa.com'}
                     required
                   />
                 </div>
@@ -243,9 +130,7 @@ export default function LoginPage({ initialMode = 'login' }: Props) {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    // Signup asks for a new secret; login recalls the saved
-                    // one. Password managers need the distinction.
-                    autoComplete={isSignup ? 'new-password' : 'current-password'}
+                    autoComplete="current-password"
                     className="w-full pl-12 pr-12 py-4 rounded-2xl border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-base font-medium bg-bg-soft/30"
                     placeholder="••••••••"
                     required
@@ -260,49 +145,44 @@ export default function LoginPage({ initialMode = 'login' }: Props) {
                 </div>
               </div>
 
-              {/* Remember me / forgot — login only */}
-              {!isSignup && (
-                <div className="flex items-center justify-between px-1">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="peer sr-only"
-                      />
-                      <div className="w-5 h-5 border-2 border-border-subtle rounded-md peer-checked:bg-primary peer-checked:border-primary transition-all" />
-                      <svg className="absolute w-3 h-3 text-white left-1 opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-bold text-text-secondary group-hover:text-primary transition-colors">Se souvenir de moi</span>
-                  </label>
+              <div className="flex items-center justify-between px-1">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="peer sr-only"
+                    />
+                    <div className="w-5 h-5 border-2 border-border-subtle rounded-md peer-checked:bg-primary peer-checked:border-primary transition-all" />
+                    <svg className="absolute w-3 h-3 text-white left-1 opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-bold text-text-secondary group-hover:text-primary transition-colors">Se souvenir de moi</span>
+                </label>
+                {selectedRole === 'SECRETARY' && (
                   <a href="#" className="text-sm font-bold text-primary hover:underline">Mot de passe oublié ?</a>
-                </div>
-              )}
+                )}
+              </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:brightness-110 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg mt-4 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
               >
-                {isSubmitting
-                  ? 'Connexion…'
-                  : isSignup ? "S'inscrire" : 'Se connecter'}
+                {isSubmitting ? 'Connexion…' : 'Se connecter'}
                 <ChevronRight size={22} />
               </button>
             </form>
+
+            {selectedRole === 'DOCTOR' && (
+              <p className="text-center mt-6 text-text-secondary text-xs font-medium">
+                Votre matricule et votre mot de passe vous sont fournis par votre administration.
+              </p>
+            )}
           </div>
         </div>
-
-        <p className="text-center mt-8 text-text-secondary text-sm font-medium">
-          {isSignup ? (
-            <>Vous avez déjà un compte ? <button onClick={() => switchMode('login')} className="text-primary font-bold hover:underline">Se connecter</button></>
-          ) : (
-            <>Vous n'avez pas de compte ? <button onClick={() => switchMode('signup')} className="text-primary font-bold hover:underline">Créer un compte</button></>
-          )}
-        </p>
       </motion.div>
     </div>
   );

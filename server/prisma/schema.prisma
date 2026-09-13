@@ -78,7 +78,12 @@ enum AttachmentKind {
 
 model Account {
   id           String   @id @default(cuid())
-  email        String   @unique
+  /// Secretaries and admins sign in with e-mail; doctors sign in with
+  /// matricule instead, so this is optional now.
+  email        String?  @unique
+  /// Doctor's staff id, assigned by the back office. Their sign-in identifier
+  /// in place of e-mail — never set for secretaries or admins.
+  matricule    String?  @unique
   /// bcrypt hash — never the plaintext password the old localStorage kept.
   passwordHash String
   name         String
@@ -86,6 +91,9 @@ model Account {
   avatar       String
   specialty    String?
   phone        String?
+  /// Set when the back office issues a temporary password. Forces the
+  /// doctor to choose their own before they can use the rest of the app.
+  mustChangePassword Boolean @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

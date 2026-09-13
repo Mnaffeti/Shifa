@@ -3,16 +3,17 @@ import { ArrowRight } from 'lucide-react';
 
 /**
  * Pre-login gate. The first thing an unauthenticated visitor sees: the
- * ShifaPlus wordmark, what the product does, and the two ways in.
+ * ShifaPlus wordmark, what the product does, and the way in.
+ *
+ * There is no self-signup: doctor accounts are provisioned by the back
+ * office (matricule + temporary password), so this only opens the login page.
  */
 interface Props {
-  /** Opens the auth page on the sign-in tab. */
+  /** Opens the login page. */
   onLogin: () => void;
-  /** Opens the auth page on the create-account tab. */
-  onSignup: () => void;
 }
 
-export default function WelcomeGate({ onLogin, onSignup }: Props) {
+export default function WelcomeGate({ onLogin }: Props) {
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
       <motion.div
@@ -39,18 +40,11 @@ export default function WelcomeGate({ onLogin, onSignup }: Props) {
 
         <div className="mt-10 w-full flex flex-col gap-3">
           <button
-            onClick={onSignup}
+            onClick={onLogin}
             className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-primary text-white text-base font-bold shadow-xl shadow-primary/20 hover:brightness-110 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
           >
-            Créer mon compte
-            <ArrowRight size={18} strokeWidth={2.5} />
-          </button>
-
-          <button
-            onClick={onLogin}
-            className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white text-primary text-base font-bold border border-border-subtle hover:border-primary hover:bg-bg-soft/50 active:scale-[0.98] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
-          >
             Se connecter
+            <ArrowRight size={18} strokeWidth={2.5} />
           </button>
         </div>
 

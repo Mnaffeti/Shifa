@@ -16,12 +16,14 @@ import type {
 
 export function serializeAccount(a: Account) {
   return {
-    email: a.email,
+    ...(a.email ? { email: a.email } : {}),
+    ...(a.matricule ? { matricule: a.matricule } : {}),
     name: a.name,
     avatar: a.avatar,
     role: a.role,
     ...(a.specialty ? { specialty: a.specialty } : {}),
     ...(a.phone ? { phone: a.phone } : {}),
+    mustChangePassword: a.mustChangePassword,
   };
 }
 

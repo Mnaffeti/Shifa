@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Mail, Phone, RefreshCw, Search, Stethoscope, Users } from 'lucide-react';
+import { CalendarDays, Mail, Phone, Plus, RefreshCw, Search, Stethoscope, Users } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { adminApi, type DemoLead } from '../lib/api';
 import { relativeDay } from '../lib/patientFiles';
+import CreateDoctorModal from '../components/CreateDoctorModal';
 
-/** Admin-only back office: every account registered through the signup form. */
+/** Admin-only back office: registered accounts, and the doctor-provisioning tool. */
 export default function AdminAccountsPage() {
   const [leads, setLeads] = useState<DemoLead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const load = async () => {
     setIsLoading(true);
@@ -63,15 +65,30 @@ export default function AdminAccountsPage() {
           </p>
         </div>
 
-        <button
-          onClick={load}
-          disabled={isLoading}
-          className="inline-flex items-center gap-2 h-11 px-4 rounded-[14px] border border-border-subtle bg-white text-[13px] font-medium text-text-secondary hover:border-accent hover:text-primary transition-all disabled:opacity-60"
-        >
-          <RefreshCw size={15} strokeWidth={1.75} className={isLoading ? 'animate-spin' : ''} />
-          Actualiser
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={load}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 h-11 px-4 rounded-[14px] border border-border-subtle bg-white text-[13px] font-medium text-text-secondary hover:border-accent hover:text-primary transition-all disabled:opacity-60"
+          >
+            <RefreshCw size={15} strokeWidth={1.75} className={isLoading ? 'animate-spin' : ''} />
+            Actualiser
+          </button>
+          <button
+            onClick={() => setIsCreateOpen(true)}
+            className="inline-flex items-center gap-2 h-11 px-4 rounded-[14px] bg-primary text-white text-[13px] font-semibold shadow-lg shadow-primary/20 hover:brightness-110 transition-all"
+          >
+            <Plus size={16} strokeWidth={2} />
+            Créer un compte médecin
+          </button>
+        </div>
       </header>
+
+      <CreateDoctorModal
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onCreated={load}
+      />
 
       {/* Counters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">

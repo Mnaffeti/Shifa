@@ -99,11 +99,13 @@ export async function clearSessionCookie(): Promise<void> {
 
 export interface SessionUser {
   id: string;
-  email: string;
+  email: string | null;
+  matricule: string | null;
   name: string;
   avatar: string;
   role: UserRole;
   specialty: string | null;
+  mustChangePassword: boolean;
 }
 
 /** Resolves the signed-in account, or null when unauthenticated. */
@@ -121,9 +123,11 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return {
     id: account.id,
     email: account.email,
+    matricule: account.matricule,
     name: account.name,
     avatar: account.avatar,
     role: account.role,
     specialty: account.specialty,
+    mustChangePassword: account.mustChangePassword,
   };
 }

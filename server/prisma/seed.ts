@@ -127,10 +127,12 @@ async function main() {
   }
 
   const hash = await bcrypt.hash(seedPassword, 10);
+  // Doctors sign in with a matricule, issued by the back office, rather than
+  // e-mail — this demo account mirrors that.
   await prisma.account.upsert({
-    where: { email: 'doctor@shifa.com' },
+    where: { matricule: 'DOC-0001' },
     create: {
-      email: 'doctor@shifa.com', passwordHash: hash, name: 'Dr. Youssef',
+      matricule: 'DOC-0001', passwordHash: hash, name: 'Dr. Youssef',
       role: 'DOCTOR', specialty: 'Spécialiste',
       avatar: 'https://picsum.photos/seed/doctor-youssef/100/100',
     },
