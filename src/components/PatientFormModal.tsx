@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePatients, Patient } from '../context/PatientContext';
 import { useAuth } from '../context/AuthContext';
+import { ApiError } from '../lib/api';
 
 // ─── Form model ─────────────────────────────────────────────────────────────
 
@@ -106,6 +107,8 @@ export default function PatientFormModal({ isOpen, onClose, mode, patient }: Pat
     mode === 'edit' && patient ? isoToFr(patient.dob) : ''
   );
   const [dobError, setDobError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync when the patient prop changes (different patient opened for edit)
   React.useEffect(() => {
@@ -114,6 +117,7 @@ export default function PatientFormModal({ isOpen, onClose, mode, patient }: Pat
       setFormData(init);
       setDobInput(init.dob ? isoToFr(init.dob) : '');
       setDobError('');
+      setSubmitError('');
     }
   }, [isOpen, patient, mode, user?.name]);
 
@@ -133,19 +137,29 @@ export default function PatientFormModal({ isOpen, onClose, mode, patient }: Pat
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const err = validateDateFr(dobInput);
     if (err) {
       setDobError(err);
       return;
     }
-    if (mode === 'add') {
-      addPatient(formData);
-    } else if (patient) {
-      updatePatient(patient.id, formData);
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitError('');
+    try {
+      if (mode === 'add') {
+        await addPatient(formData);
+      } else if (patient) {
+        await updatePatient(patient.id, formData);
+      }
+      onClose();
+    } catch (err) {
+      setSubmitError(err instanceof ApiError ? err.message : 'Échec de l\'enregistrement. Réessayez.');
+    } finally {
+      setIsSubmitting(false);
     }
-    onClose();
   };
 
   // Prevent Enter from submitting when a non-submit field is focused and fields aren't filled
@@ -324,20 +338,31 @@ export default function PatientFormModal({ isOpen, onClose, mode, patient }: Pat
               </div>
 
               {/* Actions */}
-              <div className="col-span-2 pt-4 flex gap-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 px-4 py-3 rounded-xl border border-border-subtle font-bold text-text-secondary hover:bg-bg-soft transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-3 rounded-xl bg-accent text-primary font-bold shadow-lg hover:brightness-110 transition-all active:scale-95"
-                >
-                  {mode === 'add' ? 'Sauvegarder Patient' : 'Enregistrer les modifications'}
-                </button>
+              <div className="col-span-2 pt-4 flex flex-col gap-3">
+                {submitError && (
+                  <p className="text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
+                    {submitError}
+                  </p>
+                )}
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-3 rounded-xl border border-border-subtle font-bold text-text-secondary hover:bg-bg-soft transition-colors disabled:opacity-60"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-3 rounded-xl bg-accent text-primary font-bold shadow-lg hover:brightness-110 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting
+                      ? 'Enregistrement…'
+                      : mode === 'add' ? 'Sauvegarder Patient' : 'Enregistrer les modifications'}
+                  </button>
+                </div>
               </div>
             </form>
           </motion.div>
