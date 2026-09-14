@@ -1,17 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { User, Bell, Clock, Shield, IdCard, Phone, Stethoscope, Save, Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { User, Bell, IdCard, Phone, Stethoscope, Save, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { SPECIALTIES } from '../lib/specialties';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
   const [activeSection, setActiveSection] = useState('Profil');
 
   const sections = [
     { id: 'Profil', icon: User, label: 'Profil' },
     { id: 'Notifications', icon: Bell, label: 'Notifications' },
-    { id: 'Working Hours', icon: Clock, label: 'Horaires' },
-    { id: 'Security', icon: Shield, label: 'Sécurité' },
   ];
 
   return (
@@ -42,8 +39,6 @@ export default function SettingsPage() {
           <div className="p-8">
             {activeSection === 'Profil' && <ProfileSettings />}
             {activeSection === 'Notifications' && <NotificationSettings />}
-            {activeSection === 'Horaires' && <WorkingHoursSettings />}
-            {activeSection === 'Sécurité' && <SecuritySettings />}
           </div>
         </div>
       </div>
@@ -194,7 +189,7 @@ function NotificationSettings() {
     <div className="space-y-6">
       <div>
         <h3 className="text-lg font-bold text-text-primary">Préférences de notification</h3>
-        <p className="text-xs text-text-muted font-medium mt-1">Bientôt disponible.</p>
+        <p className="text-xs text-text-muted font-medium mt-1">Non disponible en version bêta.</p>
       </div>
       <div className="space-y-4">
         {settings.map((s) => (
@@ -205,7 +200,7 @@ function NotificationSettings() {
             </div>
             <button
               disabled
-              title="Bientôt disponible"
+              title="Non disponible en version bêta"
               className={`w-12 h-6 rounded-full relative cursor-not-allowed ${enabledSettings[s.key] ? 'bg-primary' : 'bg-gray-300'}`}
             >
               <div className={`absolute top-1 w-4 h-4 bg-white rounded-full ${enabledSettings[s.key] ? 'right-1' : 'left-1'}`} />
@@ -217,139 +212,3 @@ function NotificationSettings() {
   );
 }
 
-function WorkingHoursSettings() {
-  const days = [
-    { en: 'Monday', fr: 'Lundi' },
-    { en: 'Tuesday', fr: 'Mardi' },
-    { en: 'Wednesday', fr: 'Mercredi' },
-    { en: 'Thursday', fr: 'Jeudi' },
-    { en: 'Friday', fr: 'Vendredi' },
-    { en: 'Saturday', fr: 'Samedi' },
-    { en: 'Sunday', fr: 'Dimanche' }
-  ];
-  return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-bold text-text-primary">Disponibilité</h3>
-      <div className="space-y-3">
-        {days.map(day => (
-          <div key={day.en} className="flex items-center justify-between p-4 bg-bg-soft rounded-2xl border border-border-subtle">
-            <span className="text-sm font-bold text-text-primary w-24">{day.fr}</span>
-            <div className="flex items-center gap-4">
-              <input type="time" defaultValue="08:00" className="px-3 py-1.5 rounded-lg border border-border-subtle text-sm font-medium" />
-              <span className="text-text-muted">à</span>
-              <input type="time" defaultValue="20:00" className="px-3 py-1.5 rounded-lg border border-border-subtle text-sm font-medium" />
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                className="w-1.5 h-1.5 rounded-full"
-                style={{
-                  backgroundColor: day.en === 'Sunday' ? '#9A9A9A' : '#1A6B5A'
-                }}
-              />
-              <span className="text-[13px] font-normal text-text-primary">
-                {day.en === 'Sunday' ? 'Fermé' : 'Ouvert'}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SecuritySettings() {
-  const { changePassword } = useAuth();
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (newPassword.length < 8) {
-      return setError('Le mot de passe doit contenir au moins 8 caractères.');
-    }
-    if (newPassword !== confirmPassword) {
-      return setError('Les mots de passe ne correspondent pas.');
-    }
-
-    if (!currentPassword) {
-      return setError('Veuillez saisir votre mot de passe actuel.');
-    }
-
-    if (isSaving) return;
-    setIsSaving(true);
-    try {
-      const res = await changePassword(newPassword, currentPassword);
-      if (!res.ok) {
-        setError(res.error || 'Échec du changement de mot de passe.');
-      } else {
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
-      <h3 className="text-lg font-bold text-text-primary">Changer le mot de passe</h3>
-
-      {error && (
-        <p className="text-sm font-bold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5">
-          {error}
-        </p>
-      )}
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Mot de passe actuel</label>
-          <input
-            type="password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="••••••••"
-            className="w-full px-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Nouveau mot de passe</label>
-          <input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="••••••••"
-            className="w-full px-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-text-secondary uppercase">Confirmer le nouveau mot de passe</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="••••••••"
-            className="w-full px-4 py-3 rounded-xl border border-border-subtle focus:ring-2 focus:ring-primary/20 outline-none"
-          />
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        disabled={isSaving}
-        className="flex items-center gap-2 bg-accent text-primary px-8 py-3 rounded-pill font-bold shadow-md hover:brightness-110 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
-      >
-        {saved ? <Check size={20} /> : <Save size={20} />}
-        {isSaving ? 'Enregistrement…' : saved ? 'Enregistré' : 'Enregistrer'}
-      </button>
-    </form>
-  );
-}
