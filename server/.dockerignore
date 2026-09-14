@@ -1,0 +1,11 @@
+# Build context for the API image.
+node_modules
+.next
+coverage
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Dockerfile
+.dockerignore

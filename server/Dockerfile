@@ -9,13 +9,13 @@ WORKDIR /app
 
 # ── deps: full install (dev deps included — the build needs prisma + tsc) ───
 FROM base AS deps
-COPY server/package.json server/package-lock.json ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
 # ── build ───────────────────────────────────────────────────────────────────
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
-COPY server/ ./
+COPY . ./
 
 # `prisma generate` reads the datasource block, which references these vars.
 # They are never connected to at build time — the value only has to parse.
@@ -36,12 +36,12 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
-COPY server/package.json server/next.config.ts server/proxy.ts server/tsconfig.json ./
-COPY server/prisma ./prisma
-COPY server/app ./app
-COPY server/lib ./lib
+COPY package.json next.config.ts proxy.ts tsconfig.json ./
+COPY prisma ./prisma
+COPY app ./app
+COPY lib ./lib
 
-COPY server/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 4000

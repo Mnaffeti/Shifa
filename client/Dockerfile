@@ -24,6 +24,9 @@ RUN npm run build
 # ── runtime ─────────────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS runtime
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# nginx.conf is NOT copied here: it is stack configuration living at the repo
+# root, and compose bind-mounts it at runtime. Editing it therefore needs only
+# a restart, not an image rebuild.
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

@@ -6,7 +6,7 @@
 
 ### Palette
 
-- **Brand:** `primary` `#1A4747` (deep teal), `accent` `#C8E04A` (lime), `teal-light` `#3DD6D0`, `amber` `#FFCF44`, `gold` `#F5C518`. Defined in `src/index.css`.
+- **Brand:** `primary` `#1A4747` (deep teal), `accent` `#C8E04A` (lime), `teal-light` `#3DD6D0`, `amber` `#FFCF44`, `gold` `#F5C518`. Defined in `client/src/index.css`.
 - **Status:** `pending` `#F59E0B` / `pending-bg` `#FEF3C7`; `completed` `#06B6D4` / `completed-bg` `#CFFAFE`.
 - **Soft tinted surfaces (Tailwind):** `*-50`/`*-100` shades from `amber`, `emerald`, `sky`, `rose`, `violet`, `cyan`, `indigo`, `teal` are all fair game for icon containers, badges, alert blocks, and category tints.
 
@@ -20,7 +20,7 @@
 
 ### Hover & vivacity (accent green `#C8E04A`)
 
-Cards and interactive list-rows must come alive on hover with the brand `accent`. Use these utility classes from `src/index.css` rather than redefining the hover treatment ad-hoc:
+Cards and interactive list-rows must come alive on hover with the brand `accent`. Use these utility classes from `client/src/index.css` rather than redefining the hover treatment ad-hoc:
 
 - `.card` — default card surface; already includes `hover:border-accent`, `hover:-translate-y-0.5`, `hover:shadow-card-hover`.
 - `.hover-card` — apply to bespoke `bg-white rounded-[...] border border-border-subtle` panels that need the same hover treatment as `.card` (border-accent + lift + shadow).
@@ -33,6 +33,12 @@ Guidelines:
 - Disable hover treatment on disabled rows: `disabled:hover:translate-y-0 disabled:hover:border-border-subtle`.
 - Keep hover transitions 200–300ms (`duration-200` / `duration-300`); avoid scale transforms that shift layout.
 - A small `+` button can rotate 90° on group-hover (`group-hover:rotate-90 transition-transform duration-300`) for a playful touch on add-CTAs.
+
+## Layout
+
+- `client/` — frontend (React + Vite). All UI work happens here.
+- `server/` — API (Next.js + Prisma).
+- Root holds stack-level config only: `docker-compose.yml`, `nginx.conf`, `vercel.json`.
 
 ## Stack
 

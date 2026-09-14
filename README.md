@@ -2,6 +2,20 @@
 
 Clinic management for doctors — React 19 + Vite frontend, Next.js 16 + Prisma API, Postgres.
 
+## Layout
+
+```
+.
+├── client/     frontend — React + Vite (its own package.json, Dockerfile)
+├── server/     API — Next.js + Prisma (its own package.json, Dockerfile)
+├── docker-compose.yml   orchestrates client + server + postgres
+├── nginx.conf           serves the built frontend, proxies /api to the API
+└── vercel.json          production deploy config
+```
+
+Each side owns its dependencies; there is no root `package.json`. Anything at
+the root configures the stack as a whole.
+
 ## Run with Docker Compose (recommended)
 
 Starts the database, API and frontend together. Requires Docker only — no Node install.
@@ -77,11 +91,12 @@ enable it.
 Requires Node 22+ and a Postgres instance.
 
 ```bash
-npm install && (cd server && npm install)   # install dependencies
-cd server && npm run db:push && npm run db:seed
-npm run dev                                  # API  → localhost:4000
-cd .. && npm run dev                         # app  → localhost:3000
+cd server && npm install && npm run db:push && npm run db:seed
+npm run dev                  # API → localhost:4000
+
+cd ../client && npm install
+npm run dev                  # app → localhost:3000
 ```
 
-Copy `.env.example` → `.env` and `server/.env.example` → `server/.env.local`,
-then fill in the values.
+Copy `client/.env.example` → `client/.env` and `server/.env.example` →
+`server/.env.local`, then fill in the values.
