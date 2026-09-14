@@ -105,11 +105,17 @@ export default function Navbar({ currentView, onViewChange }: NavbarProps) {
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-border-subtle py-2 z-50"
                   >
-                    <button className="w-full px-4 py-2 text-left text-sm font-bold text-text-secondary hover:bg-bg-soft hover:text-primary transition-colors flex items-center gap-2">
+                    <button
+                      onClick={() => { onViewChange('settings'); setIsProfileOpen(false); }}
+                      className="w-full px-4 py-2 text-left text-sm font-bold text-text-secondary hover:bg-bg-soft hover:text-primary transition-colors flex items-center gap-2"
+                    >
                       <Users size={16} />
                       Profil
                     </button>
-                    <button className="w-full px-4 py-2 text-left text-sm font-bold text-text-secondary hover:bg-bg-soft hover:text-primary transition-colors flex items-center gap-2">
+                    <button
+                      onClick={() => { onViewChange('settings'); setIsProfileOpen(false); }}
+                      className="w-full px-4 py-2 text-left text-sm font-bold text-text-secondary hover:bg-bg-soft hover:text-primary transition-colors flex items-center gap-2"
+                    >
                       <Settings size={16} />
                       Paramètres
                     </button>
