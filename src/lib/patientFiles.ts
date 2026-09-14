@@ -184,7 +184,7 @@ export type SortKey = 'recent' | 'name' | 'lastConsultation';
 
 export const SORT_LABELS: Record<SortKey, string> = {
   recent: 'Activité récente',
-  name: 'Nom (A → Z)',
+  name: 'Ordre alphabétique',
   lastConsultation: 'Dernière consultation',
 };
 
@@ -207,7 +207,10 @@ export function matchesQuery(file: PatientFile, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const { patient } = file;
-  return `${patient.firstName} ${patient.lastName} ${patient.id} ${patient.phone} ${patient.email}`
+  // Both the raw ISO dob and its French display form ("12 août 2026") are
+  // included, since a search could reasonably be typed either way.
+  const dobDisplay = fileDate(patient.dob) ?? '';
+  return `${patient.firstName} ${patient.lastName} ${patient.id} ${patient.phone} ${patient.email} ${patient.dob} ${dobDisplay}`
     .toLowerCase()
     .includes(q);
 }

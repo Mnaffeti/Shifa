@@ -67,7 +67,7 @@ export default function PatientArchive({
 }: Props) {
   const [query, setQuery] = useState('');
   const [activeTags, setActiveTags] = useState<FileTag[]>([]);
-  const [sortKey, setSortKey] = useState<SortKey>('recent');
+  const [sortKey, setSortKey] = useState<SortKey>('name');
   const [view, setView] = useState<'list' | 'grid'>('list');
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -120,7 +120,7 @@ export default function PatientArchive({
             type="search"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Rechercher un patient..."
+            placeholder="Rechercher un patient, une date de naissance..."
             aria-label="Rechercher un patient"
             className="w-full h-11 pl-11 pr-4 rounded-[14px] bg-white border border-border-subtle text-[14px] font-normal text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/30 focus:ring-4 focus:ring-primary/5 transition-all"
           />
