@@ -165,8 +165,12 @@ export const authApi = {
   /** `identifier` is an e-mail for admins, a matricule for doctors. */
   login: (identifier: string, password: string) =>
     post<{ user: ApiUser }>('/api/auth/login', { identifier, password }),
-  changePassword: (newPassword: string) =>
-    post<{ success: true }>('/api/auth/change-password', { newPassword }),
+  /** Matricule/e-mail aren't editable here — only name, specialty, phone. */
+  updateProfile: (data: { name?: string; specialty?: string; phone?: string }) =>
+    patch<{ user: ApiUser }>('/api/auth/me', data),
+  /** `currentPassword` is required unless the account has a back-office temp password pending change. */
+  changePassword: (newPassword: string, currentPassword?: string) =>
+    post<{ success: true }>('/api/auth/change-password', { newPassword, currentPassword }),
   logout: () => post<{ success: true }>('/api/auth/logout'),
 };
 

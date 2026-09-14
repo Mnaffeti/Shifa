@@ -10,6 +10,7 @@ interface User {
   avatar: string;
   role: UserRole;
   specialty?: string;
+  phone?: string;
   mustChangePassword: boolean;
 }
 
@@ -17,7 +18,8 @@ interface AuthContextType {
   user: User | null;
   /** Async: credentials are verified by the server, not in the browser. */
   login: (identifier: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  changePassword: (newPassword: string) => Promise<{ ok: boolean; error?: string }>;
+  updateProfile: (data: { name?: string; specialty?: string; phone?: string }) => Promise<{ ok: boolean; error?: string }>;
+  changePassword: (newPassword: string, currentPassword?: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   /** True while the initial session probe is in flight. */
@@ -59,9 +61,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const changePassword = useCallback(async (newPassword: string) => {
+  const updateProfile = useCallback(async (data: { name?: string; specialty?: string; phone?: string }) => {
     try {
-      await authApi.changePassword(newPassword);
+      const { user } = await authApi.updateProfile(data);
+      setUser(user as User);
+      return { ok: true };
+    } catch (err) {
+      const message = err instanceof ApiError
+        ? err.message
+        : 'Mise à jour du profil impossible. Réessayez.';
+      return { ok: false, error: message };
+    }
+  }, []);
+
+  const changePassword = useCallback(async (newPassword: string, currentPassword?: string) => {
+    try {
+      await authApi.changePassword(newPassword, currentPassword);
       setUser(prev => prev ? { ...prev, mustChangePassword: false } : prev);
       return { ok: true };
     } catch (err) {
@@ -95,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user,
       login,
+      updateProfile,
       changePassword,
       logout,
       isAuthenticated: !!user,

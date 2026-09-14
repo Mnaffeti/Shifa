@@ -17,6 +17,18 @@ export async function POST(request: Request) {
     const parsed = await parseBody(request, changePasswordSchema);
     if (!parsed.ok) return parsed.response;
 
+    // A temporary password from the back office doesn't require the old one
+    // to confirm — the doctor hasn't chosen one yet. Any voluntary change
+    // afterwards must prove the current password first.
+    if (!user.mustChangePassword) {
+      if (!parsed.data.currentPassword) {
+        return fail('Mot de passe actuel requis', 400);
+      }
+      const account = await prisma.account.findUnique({ where: { id: user.id } });
+      const valid = account && await bcrypt.compare(parsed.data.currentPassword, account.passwordHash);
+      if (!valid) return fail('Mot de passe actuel incorrect', 401);
+    }
+
     await prisma.account.update({
       where: { id: user.id },
       data: {

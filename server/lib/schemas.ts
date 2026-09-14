@@ -19,8 +19,20 @@ export const adminCreateDoctorSchema = z.object({
   phone: z.string().min(6, 'Numéro de téléphone requis').max(40),
 });
 
+// `currentPassword` is required except right after the back office issues a
+// temporary password (mustChangePassword) — the doctor hasn't chosen a
+// password of their own yet to confirm.
 export const changePasswordSchema = z.object({
+  currentPassword: z.string().optional(),
   newPassword: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
+});
+
+// The signed-in account edits its own profile. Matricule/email are the
+// sign-in identifier and are not editable here.
+export const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Nom requis').max(120).optional(),
+  specialty: z.string().min(1, 'Spécialité requise').max(80).optional(),
+  phone: z.string().min(6, 'Numéro de téléphone requis').max(40).optional(),
 });
 
 // Public: a doctor requests an account. No password is collected — an admin

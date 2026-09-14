@@ -105,6 +105,7 @@ export interface SessionUser {
   avatar: string;
   role: UserRole;
   specialty: string | null;
+  phone: string | null;
   mustChangePassword: boolean;
 }
 
@@ -128,6 +129,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     avatar: account.avatar,
     role: account.role,
     specialty: account.specialty,
+    phone: account.phone,
     mustChangePassword: account.mustChangePassword,
   };
 }
