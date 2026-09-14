@@ -203,14 +203,20 @@ export function sortFiles(files: PatientFile[], key: SortKey): PatientFile[] {
   return out;
 }
 
+/** ISO "yyyy-MM-dd" → "dd/MM/yyyy", matching the patient form's date field. */
+function isoToFrSlash(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : '';
+}
+
 export function matchesQuery(file: PatientFile, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const { patient } = file;
-  // Both the raw ISO dob and its French display form ("12 août 2026") are
-  // included, since a search could reasonably be typed either way.
-  const dobDisplay = fileDate(patient.dob) ?? '';
-  return `${patient.firstName} ${patient.lastName} ${patient.id} ${patient.phone} ${patient.email} ${patient.dob} ${dobDisplay}`
+  // dob is searchable as dd/MM/yyyy — the same format the patient form uses.
+  const dobDisplay = isoToFrSlash(patient.dob);
+  return `${patient.firstName} ${patient.lastName} ${patient.id} ${patient.phone} ${patient.email} ${dobDisplay}`
     .toLowerCase()
     .includes(q);
 }

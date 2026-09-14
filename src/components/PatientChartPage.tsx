@@ -141,12 +141,50 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
     addAlerte, removeAlerte, addNote, removeNote, addAttachment, removeAttachment,
   } = useChart();
   const { getPatientConsultations } = useConsultations();
-  const { appointments } = useAppointments();
+  const { appointments, addAppointment, setCurrentPatientApt } = useAppointments();
   const { updatePatient } = usePatients();
 
   const chart = getChart(patient.id);
   const consultations = getPatientConsultations(patient.id).filter(c => c.status === 'signed');
   const canEdit = user?.role === 'DOCTOR';
+
+  const [isStartingConsultation, setIsStartingConsultation] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+
+  // Creates a walk-in appointment right now and opens the consultation for
+  // it — same pattern as the dashboard's quick-start, scoped to this patient.
+  const handleStartConsultation = async () => {
+    if (isStartingConsultation) return;
+    setStartError(null);
+    setIsStartingConsultation(true);
+
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const startTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const end = new Date(now.getTime() + 30 * 60 * 1000);
+    const endTime = `${pad(end.getHours())}:${pad(end.getMinutes())}`;
+
+    try {
+      const created = await addAppointment({
+        patientId: patient.id,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        doctor: user?.name ?? patient.assignedDoctor,
+        date: now.toISOString().split('T')[0],
+        startTime,
+        endTime,
+        duration: 30,
+        type: 'Consultation',
+        status: 'Confirmed',
+        notes: 'Consultation rapide (sans rendez-vous)',
+      });
+      setCurrentPatientApt(created.id);
+      onOpenConsultation?.(created);
+    } catch (err) {
+      setStartError(err instanceof Error ? err.message : 'Impossible de démarrer la consultation.');
+    } finally {
+      setIsStartingConsultation(false);
+    }
+  };
 
   const v = chart.dernieresConstantes;
 
@@ -961,10 +999,26 @@ export default function PatientChartPage({ patient, onBack, onOpenConsultation }
         {/* ══ RIGHT PANEL ══ */}
         <div className="flex flex-col gap-5 xl:sticky xl:top-6">
           <div className="group bg-white rounded-[20px] shadow-card border border-border-subtle p-6 hover-card">
-            <div className="flex items-center gap-2.5 mb-1">
-              <Stethoscope size={14} className="text-text-muted/50 group-hover:text-primary transition-colors" strokeWidth={1.75} />
-              <h3 className="text-[11px] font-medium text-text-muted uppercase tracking-widest">Consultations précédentes</h3>
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <div className="flex items-center gap-2.5">
+                <Stethoscope size={14} className="text-text-muted/50 group-hover:text-primary transition-colors" strokeWidth={1.75} />
+                <h3 className="text-[11px] font-medium text-text-muted uppercase tracking-widest">Consultations précédentes</h3>
+              </div>
+              {canEdit && (
+                <button
+                  onClick={handleStartConsultation}
+                  disabled={isStartingConsultation}
+                  title="Démarrer une consultation"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-white text-[11px] font-bold shadow-sm hover:brightness-110 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Plus size={13} strokeWidth={2.5} />
+                  {isStartingConsultation ? 'Démarrage…' : 'Consultation'}
+                </button>
+              )}
             </div>
+            {startError && (
+              <p className="text-[11px] font-semibold text-red-600 mb-2">{startError}</p>
+            )}
             <p className="text-sm font-medium text-text-secondary mb-5">
               {consultations.length} dossier{consultations.length !== 1 ? 's' : ''}
             </p>
