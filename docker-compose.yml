@@ -1,0 +1,97 @@
+# SHIFA — full local stack: Postgres + Next.js API + Vite/nginx frontend.
+#
+#   docker compose up -d --build     start everything
+#   docker compose logs -f           follow logs
+#   docker compose down              stop (data survives)
+#   docker compose down -v           stop and wipe the database
+#
+# Configuration lives in .env.docker next to this file.
+
+services:
+  # ── Database ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    container_name: shifa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shifa_dev_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-shifa}
+    ports:
+      # Exposed so you can attach psql / Prisma Studio from the host.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - shifa-db-data:/var/lib/postgresql/data
+    healthcheck:
+      # -d/-U matter: without them pg_isready reports ready while the init
+      # scripts are still running, and the API's first connect fails.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-shifa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ── API ───────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: shifa-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # `postgres` is the compose service name, resolved on the internal network.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-shifa_dev_pw}@postgres:5432/${POSTGRES_DB:-shifa}
+      DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-shifa_dev_pw}@postgres:5432/${POSTGRES_DB:-shifa}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required — see .env.docker}
+      SEED_PASSWORD: ${SEED_PASSWORD:?SEED_PASSWORD is required — see .env.docker}
+      SEED_ON_START: ${SEED_ON_START:-true}
+      # The image runs NODE_ENV=production, and seed.ts refuses to touch a
+      # production database without this explicit opt-in. That guard is
+      # what protects the real deployment; here the database is a local
+      # throwaway volume, so opting in is safe and intended.
+      ALLOW_PROD_SEED: ${ALLOW_PROD_SEED:-true}
+      # The browser only ever talks to nginx, so that is the origin to allow.
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-http://localhost:8080}
+      # Frontend and API share nginx's origin, so the cookie is same-site.
+      # Leave CROSS_SITE_COOKIE unset: SameSite=Lax is the safer default.
+    ports:
+      # Published for direct API access (curl, Postman). The app does not use it.
+      - "${API_PORT:-4000}:4000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  # ── Frontend ──────────────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Empty on purpose — the client calls /api on its own origin, which
+        # nginx proxies to the api service. See nginx.conf.
+        VITE_API_URL: ""
+        VITE_GROQ_API_KEY: ${VITE_GROQ_API_KEY:-}
+    container_name: shifa-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  shifa-db-data:
