@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { User, IdCard, Stethoscope, Phone, ChevronRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { User, IdCard, Stethoscope, Phone, ChevronRight, ArrowLeft, CheckCircle2, ChevronDown, ShieldCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { doctorRequestApi, ApiError } from '../lib/api';
 import { SPECIALTIES } from '../lib/specialties';
 
@@ -19,6 +19,8 @@ export default function DoctorRequestPage({ onBack }: Props) {
   const [matricule, setMatricule] = useState('');
   const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
   const [phone, setPhone] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsExpanded, setTermsExpanded] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -31,6 +33,9 @@ export default function DoctorRequestPage({ onBack }: Props) {
     if (!matricule.trim()) return setError('Veuillez saisir votre matricule.');
     if (phone.replace(/[^\d]/g, '').length < 8) {
       return setError('Veuillez saisir un numéro de téléphone valide.');
+    }
+    if (!termsAccepted) {
+      return setError('Veuillez accepter les conditions d\'utilisation pour continuer.');
     }
 
     if (isSubmitting) return;
@@ -176,9 +181,81 @@ export default function DoctorRequestPage({ onBack }: Props) {
                     </div>
                   </div>
 
+                  {/* Terms of use */}
+                  <div className="rounded-2xl border border-border-subtle bg-bg-soft/30 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setTermsExpanded(!termsExpanded)}
+                      className="w-full flex items-center justify-between gap-2 px-4 py-3.5 text-left"
+                    >
+                      <span className="inline-flex items-center gap-2 text-sm font-bold text-text-secondary">
+                        <ShieldCheck size={16} className="text-primary shrink-0" />
+                        Conditions d'utilisation et confidentialité
+                      </span>
+                      <ChevronDown
+                        size={16}
+                        className={`text-text-muted transition-transform shrink-0 ${termsExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                      {termsExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-4 pb-4 max-h-56 overflow-y-auto text-[12.5px] leading-relaxed text-text-secondary space-y-2.5 font-medium">
+                            <p>
+                              En demandant un compte médecin sur ShifaPlus, vous acceptez les conditions suivantes :
+                            </p>
+                            <p>
+                              <strong className="text-text-primary">Protection des données.</strong> Les
+                              données patients sont chiffrées au repos et en transit, et ne sont
+                              accessibles qu'aux professionnels de santé autorisés sur leur propre
+                              patientèle.
+                            </p>
+                            <p>
+                              <strong className="text-text-primary">Responsabilité du compte.</strong> Vous
+                              êtes responsable de la confidentialité de votre matricule et de votre mot
+                              de passe, ainsi que de toute activité effectuée depuis votre compte. Ne
+                              partagez jamais vos identifiants.
+                            </p>
+                            <p>
+                              <strong className="text-text-primary">Usage professionnel.</strong> Le compte
+                              est strictement réservé à un usage professionnel dans le cadre de votre
+                              exercice médical, conformément au secret médical et à la réglementation en
+                              vigueur.
+                            </p>
+                            <p>
+                              <strong className="text-text-primary">Exactitude des informations.</strong> Les
+                              informations fournies dans cette demande doivent être exactes ; le compte
+                              est soumis à validation par un administrateur avant activation.
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <label className="flex items-start gap-3 px-4 pb-4 pt-1 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded border-border-subtle text-primary focus:ring-primary/20 shrink-0"
+                      />
+                      <span className="text-[13px] font-medium text-text-secondary leading-snug">
+                        J'ai lu et j'accepte les conditions d'utilisation et la politique de
+                        confidentialité.
+                      </span>
+                    </label>
+                  </div>
+
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !termsAccepted}
                     className="w-full bg-primary text-white py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:brightness-110 transition-all active:scale-[0.98] flex items-center justify-center gap-2 text-lg mt-4 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
                   >
                     {isSubmitting ? 'Envoi…' : 'Envoyer la demande'}
