@@ -3,6 +3,7 @@ import { X, Trash2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAppointments, Appointment, AppointmentType } from '../context/AppointmentContext';
 import { usePatients } from '../context/PatientContext';
+import { useAuth } from '../context/AuthContext';
 
 interface Props {
   isOpen: boolean;
@@ -29,14 +30,17 @@ function toMinutes(time: string): number {
 export default function AppointmentFormModal({ isOpen, onClose, initialData, isEdit }: Props) {
   const { addAppointment, updateAppointment, deleteAppointment, appointments } = useAppointments();
   const { patients } = usePatients();
+  const { user } = useAuth();
   const [conflict, setConflict] = useState<Appointment | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // DOCTOR is the only clinical role — a new appointment is always booked
+  // under the signed-in doctor; the server rejects any other doctor name.
   const [formData, setFormData] = useState<Partial<Appointment>>({
     patientId: '',
     patientName: '',
-    doctor: 'Dr. Youssef',
+    doctor: user?.name ?? '',
     date: new Date().toISOString().split('T')[0],
     startTime: '09:00',
     endTime: '09:30',
@@ -47,11 +51,11 @@ export default function AppointmentFormModal({ isOpen, onClose, initialData, isE
   });
 
   useEffect(() => {
-    if (initialData) {
-      setFormData(prev => ({ ...prev, ...initialData }));
+    if (isOpen) {
+      setFormData(prev => ({ ...prev, doctor: user?.name ?? prev.doctor, ...initialData }));
     }
     setConflict(null);
-  }, [initialData, isOpen]);
+  }, [initialData, isOpen, user?.name]);
 
   useEffect(() => {
     if (!isOpen || !formData.date || !formData.startTime || !formData.endTime) {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePatients, Patient } from '../context/PatientContext';
+import { useAuth } from '../context/AuthContext';
 
 // ─── Form model ─────────────────────────────────────────────────────────────
 
@@ -19,19 +20,21 @@ export type PatientFormData = {
   bloodType: string;
 };
 
-const EMPTY_FORM: PatientFormData = {
-  firstName: '',
-  lastName: '',
-  dob: '',
-  gender: 'Homme',
-  phone: '',
-  email: '',
-  address: '',
-  profession: '',
-  cin: '',
-  assignedDoctor: 'Dr. Youssef',
-  bloodType: 'A+'
-};
+function emptyForm(doctorName: string): PatientFormData {
+  return {
+    firstName: '',
+    lastName: '',
+    dob: '',
+    gender: 'Homme',
+    phone: '',
+    email: '',
+    address: '',
+    profession: '',
+    cin: '',
+    assignedDoctor: doctorName,
+    bloodType: 'A+'
+  };
+}
 
 function patientToForm(p: Patient): PatientFormData {
   return {
@@ -92,8 +95,11 @@ interface PatientFormModalProps {
 
 export default function PatientFormModal({ isOpen, onClose, mode, patient }: PatientFormModalProps) {
   const { addPatient, updatePatient } = usePatients();
+  const { user } = useAuth();
+  // DOCTOR is the only clinical role — a new patient is always filed under
+  // the signed-in doctor; the server rejects any other assignedDoctor.
   const [formData, setFormData] = useState<PatientFormData>(
-    mode === 'edit' && patient ? patientToForm(patient) : EMPTY_FORM
+    mode === 'edit' && patient ? patientToForm(patient) : emptyForm(user?.name ?? '')
   );
   // Display value for the date field (DD/MM/YYYY); formData.dob stays ISO.
   const [dobInput, setDobInput] = useState(
@@ -104,12 +110,12 @@ export default function PatientFormModal({ isOpen, onClose, mode, patient }: Pat
   // Sync when the patient prop changes (different patient opened for edit)
   React.useEffect(() => {
     if (isOpen) {
-      const init = mode === 'edit' && patient ? patientToForm(patient) : EMPTY_FORM;
+      const init = mode === 'edit' && patient ? patientToForm(patient) : emptyForm(user?.name ?? '');
       setFormData(init);
       setDobInput(init.dob ? isoToFr(init.dob) : '');
       setDobError('');
     }
-  }, [isOpen, patient, mode]);
+  }, [isOpen, patient, mode, user?.name]);
 
   const set = (field: keyof PatientFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setFormData(prev => ({ ...prev, [field]: e.target.value }));
