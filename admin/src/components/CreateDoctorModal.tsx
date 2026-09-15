@@ -26,7 +26,7 @@ interface Issued {
 export default function CreateDoctorModal({ open, onClose, onCreated }: Props) {
   const [name, setName] = useState('');
   const [matricule, setMatricule] = useState('');
-  const [specialty, setSpecialty] = useState(SPECIALTIES[0]);
+  const [specialty, setSpecialty] = useState<string>(SPECIALTIES[0]);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,7 +55,7 @@ export default function CreateDoctorModal({ open, onClose, onCreated }: Props) {
     if (isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const { doctor, temporaryPassword } = await adminApi.createDoctor({
+      const { doctor, temporaryPassword } = await adminApi.doctors.create({
         name: name.trim(),
         matricule: matricule.trim(),
         specialty,

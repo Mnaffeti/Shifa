@@ -98,5 +98,30 @@ services:
       retries: 5
       start_period: 10s
 
+  # ── Back office ───────────────────────────────────────────────────────────
+  admin:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+      args:
+        # Empty on purpose — the console calls /api on its own origin, which
+        # its nginx proxies to the api service. See nginx.admin.conf.
+        VITE_API_URL: ""
+    container_name: shifa-admin
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./nginx.admin.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${ADMIN_PORT:-8081}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 volumes:
   shifa-db-data:

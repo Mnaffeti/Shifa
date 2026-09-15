@@ -25,8 +25,7 @@ import DoctorRequestPage from './pages/DoctorRequestPage';
 import SchedulePage from './pages/SchedulePage';
 import PatientsPage from './pages/PatientsPage';
 import SettingsPage from './pages/SettingsPage';
-import AdminAccountsPage from './pages/AdminAccountsPage';
-import AdminLayout from './components/AdminLayout';
+import AdminRedirectNotice from './pages/AdminRedirectNotice';
 
 /** DOCTOR is the only clinical role — there is no more secretary view to branch on. */
 function MainLayout() {
@@ -115,14 +114,14 @@ function AppContent() {
   }
 
   // An admin operates the product rather than a practice: no patients, no
-  // schedule. Rendering them outside the clinical providers avoids a burst of
-  // requests for data they are not allowed to read anyway.
+  // schedule. The back office is its own app now, so point them at it instead
+  // of rendering a console here — and never mount the clinical providers,
+  // which would fire a burst of requests for data they cannot read anyway.
+  //
+  // This is reachable without signing in here: cookies ignore the port, so an
+  // admin signed in to the console on :8081 arrives with a valid session.
   if (user?.role === 'ADMIN') {
-    return (
-      <AdminLayout>
-        <AdminAccountsPage />
-      </AdminLayout>
-    );
+    return <AdminRedirectNotice />;
   }
 
   return (

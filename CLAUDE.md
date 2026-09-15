@@ -36,9 +36,14 @@ Guidelines:
 
 ## Layout
 
-- `client/` — frontend (React + Vite). All UI work happens here.
+- `client/` — doctor app (React + Vite). Most UI work happens here.
+- `admin/` — back office (React + Vite). Admin-only: doctor accounts, requests, activity.
 - `server/` — API (Next.js + Prisma).
-- Root holds stack-level config only: `docker-compose.yml`, `nginx.conf`, `vercel.json`.
+- Root holds stack-level config only: `docker-compose.yml`, `nginx*.conf`, `vercel.json`.
+
+`admin/` re-uses `client/`'s design system verbatim (`src/index.css` is a copy:
+same tokens, `.card`, `.hover-card`, `.hover-row`, `.pulse-accent`). Keep the two
+in sync — a token change in one belongs in the other.
 
 ## Stack
 

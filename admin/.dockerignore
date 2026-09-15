@@ -1,0 +1,12 @@
+# Build context for the frontend image.
+node_modules
+dist
+build
+coverage
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Dockerfile
+.dockerignore

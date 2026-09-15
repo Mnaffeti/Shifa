@@ -6,15 +6,21 @@ Clinic management for doctors — React 19 + Vite frontend, Next.js 16 + Prisma 
 
 ```
 .
-├── client/     frontend — React + Vite (its own package.json, Dockerfile)
-├── server/     API — Next.js + Prisma (its own package.json, Dockerfile)
-├── docker-compose.yml   orchestrates client + server + postgres
-├── nginx.conf           serves the built frontend, proxies /api to the API
+├── client/     doctor app — React + Vite (own package.json, Dockerfile)
+├── admin/      back office — React + Vite (own package.json, Dockerfile)
+├── server/     API — Next.js + Prisma (own package.json, Dockerfile)
+├── docker-compose.yml   orchestrates all three + postgres
+├── nginx.conf           serves client/, proxies /api
+├── nginx.admin.conf     serves admin/, proxies /api
 └── vercel.json          production deploy config
 ```
 
-Each side owns its dependencies; there is no root `package.json`. Anything at
+Each app owns its dependencies; there is no root `package.json`. Anything at
 the root configures the stack as a whole.
+
+`admin/` carries its own trimmed copy of the API client and auth context —
+the back office never touches patients, charts or consultations, so those
+modules are absent rather than shipped unused.
 
 ## Run with Docker Compose (recommended)
 
@@ -33,13 +39,31 @@ Sign in with the seeded demo doctor:
 | Matricule | `DOC-0001` |
 | Password | whatever `SEED_PASSWORD` is set to in `.env.docker` |
 
+The back office lives at **http://localhost:8081** and needs an ADMIN account,
+which the seed does not create. Make one with:
+
+```bash
+cd server
+ADMIN_EMAIL="admin@shifa.com" ADMIN_PASSWORD="choose-a-strong-one" npm run db:create-admin
+```
+
+Or, against the running stack:
+
+```bash
+docker compose --env-file .env.docker exec   -e ADMIN_EMAIL="admin@shifa.com" -e ADMIN_PASSWORD="choose-a-strong-one"   api npx tsx prisma/create-admin.ts
+```
+
 ### Services
 
 | Service | Host port | Purpose |
 |---|---|---|
-| `web` | 8080 | Frontend (nginx). Also proxies `/api` to the API. |
-| `api` | 4000 | Next.js API. Published for curl/Postman; the app doesn't use it. |
+| `web` | 8080 | Doctor app (nginx). Proxies `/api` to the API. |
+| `admin` | 8081 | Back office (nginx). Proxies `/api` to the API. |
+| `api` | 4000 | Next.js API. Published for curl/Postman; the apps don't use it. |
 | `postgres` | 5432 | Database. Data lives in the `shifa-db-data` volume. |
+
+Both frontends proxy `/api` through their own nginx rather than calling port
+4000 directly, so the session cookie stays first-party on each origin.
 
 The browser talks only to port 8080. nginx proxies `/api` to the API container so
 both share one origin and the session cookie stays first-party — the same shape
@@ -92,10 +116,13 @@ Requires Node 22+ and a Postgres instance.
 
 ```bash
 cd server && npm install && npm run db:push && npm run db:seed
-npm run dev                  # API → localhost:4000
+npm run dev                  # API        → localhost:4000
 
 cd ../client && npm install
-npm run dev                  # app → localhost:3000
+npm run dev                  # doctor app → localhost:3000
+
+cd ../admin && npm install
+npm run dev                  # back office → localhost:3001
 ```
 
 Copy `client/.env.example` → `client/.env` and `server/.env.example` →

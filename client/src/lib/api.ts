@@ -121,44 +121,11 @@ export interface DoctorRequest {
   createdAt: string;
 }
 
-/** Back-office view of registered accounts. ADMIN only. */
-export const adminApi = {
-  leads: () => get<{ leads: DemoLead[] }>('/api/demo/leads'),
-  /** Creates a doctor account directly; the temporary password is returned once. */
-  createDoctor: (data: { name: string; matricule: string; specialty: string; phone: string }) =>
-    post<{
-      doctor: { name: string; matricule: string; specialty: string; phone: string };
-      temporaryPassword: string;
-    }>('/api/admin/doctors', data),
-  doctorRequests: {
-    list: () => get<{ requests: DoctorRequest[] }>('/api/admin/doctor-requests'),
-    /** Accepts a pending request: creates the account and issues a temporary password. */
-    accept: (id: string) =>
-      post<{
-        doctor: { name: string; matricule: string; specialty: string; phone: string };
-        temporaryPassword: string;
-      }>(`/api/admin/doctor-requests/${id}/accept`),
-    reject: (id: string) =>
-      post<{ success: true }>(`/api/admin/doctor-requests/${id}/reject`),
-  },
-};
-
 /** Public: a doctor submits this to request an account; no password is collected. */
 export const doctorRequestApi = {
   submit: (data: { name: string; matricule: string; specialty: string; phone: string }) =>
     post<{ request: DoctorRequest }>('/api/doctor-requests', data),
 };
-
-export interface DemoLead {
-  id: string;
-  name: string;
-  phone: string;
-  specialty: string | null;
-  email: string | null;
-  visits: number;
-  createdAt: string;
-  lastSeenAt: string;
-}
 
 export const authApi = {
   me: () => get<{ user: ApiUser | null }>('/api/auth/me'),
