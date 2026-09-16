@@ -21,7 +21,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <div className="absolute inset-0 bg-[#1A9E9E] rotate-45 rounded-sm opacity-80" />
               <div className="absolute inset-0 bg-[#C8E04A] -rotate-12 rounded-sm opacity-80 translate-x-1" />
             </div>
-            <span className="font-heading font-bold text-2xl text-primary ml-2">ShifaPlus</span>
+            <span className="font-heading font-bold text-2xl text-primary ml-2">ClickMED</span>
             <span className="inline-flex items-center gap-1.5 ml-3 px-2.5 py-1 rounded-full bg-primary/[0.08] border border-primary/15 text-[11px] font-semibold text-primary uppercase tracking-wider">
               <ShieldCheck size={12} strokeWidth={2.25} />
               Admin
@@ -47,7 +47,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-8 py-8">{children}</main>
 
       <footer className="py-8 px-8 text-center text-text-muted text-xs font-medium">
-        © 2026 ShifaPlus Hospital Management System. All rights reserved.
+        © 2026 ClickMED Hospital Management System. All rights reserved.
       </footer>
     </div>
   );

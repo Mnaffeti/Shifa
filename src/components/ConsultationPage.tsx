@@ -80,7 +80,7 @@ function printOrdonnance(
     .footer{margin-top:64px;display:flex;justify-content:flex-end;}
     .sl{width:220px;border-top:1.5px solid #333;margin-bottom:8px;}@media print{body{padding:24px;}}</style></head><body>
     <div class="hdr"><div><div class="dn">${user?.name ?? 'Dr.'}</div>
-      <div class="sub">${user?.specialty ?? 'Médecin Spécialiste'}<br/>ShifaPlus Medical Center</div></div>
+      <div class="sub">${user?.specialty ?? 'Médecin Spécialiste'}<br/>ClickMED Medical Center</div></div>
       <div class="sub" style="text-align:right;">Date : ${format(new Date(), 'dd MMMM yyyy', { locale: fr })}<br/>${user?.email ?? ''}</div></div>
     <div class="pb">
       <p><strong>Patient :</strong> ${appointment.patientName}</p>

@@ -72,7 +72,7 @@ export default function DoctorRequestPage({ onBack }: Props) {
                 <div className="absolute inset-0 bg-[#1A9E9E] rotate-45 rounded-sm opacity-80" />
                 <div className="absolute inset-0 bg-[#C8E04A] -rotate-12 rounded-sm opacity-80 translate-x-1" />
               </div>
-              <span className="font-heading font-bold text-3xl text-primary ml-2">ShifaPlus</span>
+              <span className="font-heading font-bold text-3xl text-primary ml-2">ClickMED</span>
             </div>
 
             {submitted ? (
@@ -209,7 +209,7 @@ export default function DoctorRequestPage({ onBack }: Props) {
                         >
                           <div className="px-4 pb-4 max-h-56 overflow-y-auto text-[12.5px] leading-relaxed text-text-secondary space-y-2.5 font-medium">
                             <p>
-                              En demandant un compte médecin sur ShifaPlus, vous acceptez les conditions suivantes :
+                              En demandant un compte médecin sur ClickMED, vous acceptez les conditions suivantes :
                             </p>
                             <p>
                               <strong className="text-text-primary">Protection des données.</strong> Les

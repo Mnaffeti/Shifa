@@ -48,7 +48,7 @@ export default function LoginPage() {
                 <div className="absolute inset-0 bg-[#1A9E9E] rotate-45 rounded-sm opacity-80" />
                 <div className="absolute inset-0 bg-[#C8E04A] -rotate-12 rounded-sm opacity-80 translate-x-1" />
               </div>
-              <span className="font-heading font-bold text-3xl text-primary ml-2">ShifaPlus</span>
+              <span className="font-heading font-bold text-3xl text-primary ml-2">ClickMED</span>
             </div>
 
             <div className="text-center mb-8">

@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 
 /**
  * Pre-login gate. The first thing an unauthenticated visitor sees: the
- * ShifaPlus wordmark, what the product does, and the two ways in.
+ * ClickMED wordmark, what the product does, and the two ways in.
  *
  * There is no self-signup with a password: a doctor requests an account
  * (name, matricule, specialty, phone) and an admin accepts it from the back
@@ -31,7 +31,7 @@ export default function WelcomeGate({ onLogin, onRequestAccount }: Props) {
             <div className="absolute inset-0 bg-[#1A9E9E] rotate-45 rounded-sm opacity-80" />
             <div className="absolute inset-0 bg-[#C8E04A] -rotate-12 rounded-sm opacity-80 translate-x-1" />
           </div>
-          <span className="font-heading font-bold text-3xl text-primary ml-2">ShifaPlus</span>
+          <span className="font-heading font-bold text-3xl text-primary ml-2">ClickMED</span>
         </div>
 
         <h1 className="text-3xl font-bold text-text-primary font-heading tracking-tight leading-tight">
