@@ -99,6 +99,12 @@ model Account {
   /// Set when the back office issues a temporary password. Forces the
   /// doctor to choose their own before they can use the rest of the app.
   mustChangePassword Boolean @default(false)
+  /// Plaintext of the back-office-issued temporary password, kept only until
+  /// the doctor changes it (see mustChangePassword) — lets the admin recover
+  /// it via the accounts list if the one-time reveal was closed too soon.
+  /// Never populated outside that window; wiped the moment a real password
+  /// is set.
+  tempPassword String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

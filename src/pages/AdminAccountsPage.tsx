@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Mail, Phone, Plus, RefreshCw, Search, Stethoscope, Users } from 'lucide-react';
+import { CalendarDays, Check, Copy, KeyRound, Mail, Phone, Plus, RefreshCw, Search, Stethoscope, Users } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { adminApi, type DemoLead } from '../lib/api';
@@ -14,6 +14,21 @@ export default function AdminAccountsPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyCredentials = async (lead: DemoLead) => {
+    if (!lead.tempPassword) return;
+    const text = lead.matricule
+      ? `Matricule : ${lead.matricule}\nMot de passe temporaire : ${lead.tempPassword}`
+      : `Mot de passe temporaire : ${lead.tempPassword}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(lead.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      // Clipboard API unavailable — nothing more we can do here.
+    }
+  };
 
   const load = async () => {
     setIsLoading(true);
@@ -34,7 +49,7 @@ export default function AdminAccountsPage() {
     const q = query.trim().toLowerCase();
     if (!q) return leads;
     return leads.filter(l =>
-      `${l.name} ${l.phone} ${l.specialty ?? ''} ${l.email ?? ''}`.toLowerCase().includes(q),
+      `${l.name} ${l.phone} ${l.specialty ?? ''} ${l.email ?? ''} ${l.matricule ?? ''}`.toLowerCase().includes(q),
     );
   }, [leads, query]);
 
@@ -170,9 +185,30 @@ export default function AdminAccountsPage() {
                       {lead.visits} connexions
                     </span>
                   )}
+                  {lead.tempPassword && (
+                    <button
+                      onClick={() => copyCredentials(lead)}
+                      title="Copier le matricule et le mot de passe temporaire"
+                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[10.5px] font-medium text-amber-700 hover:bg-amber-100 transition-colors"
+                    >
+                      <KeyRound size={11} strokeWidth={2} />
+                      Connexion en attente
+                      {copiedId === lead.id ? (
+                        <Check size={11} strokeWidth={2.25} />
+                      ) : (
+                        <Copy size={11} strokeWidth={2} />
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-x-5 gap-y-1 mt-1.5">
+                  {lead.matricule && (
+                    <span className="inline-flex items-center gap-1.5 text-[12.5px] text-text-secondary font-normal tabular">
+                      <KeyRound size={12} strokeWidth={1.75} className="text-text-muted shrink-0" />
+                      {lead.matricule}
+                    </span>
+                  )}
                   <span className="inline-flex items-center gap-1.5 text-[12.5px] text-text-secondary font-normal tabular">
                     <Phone size={12} strokeWidth={1.75} className="text-text-muted shrink-0" />
                     {lead.phone}

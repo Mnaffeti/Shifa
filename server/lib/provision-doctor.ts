@@ -47,6 +47,10 @@ export async function provisionDoctorAccount(input: DoctorAccountInput) {
       phone: input.phone.trim(),
       specialty: input.specialty,
       mustChangePassword: true,
+      // Kept in plaintext only until the doctor sets their own password, so
+      // the admin can still recover it from the accounts list if the
+      // one-time reveal was closed before it was copied.
+      tempPassword,
       avatar: `https://picsum.photos/seed/${encodeURIComponent(trimmedMatricule)}/100/100`,
     },
   });
@@ -78,7 +82,6 @@ export async function provisionDoctorAccount(input: DoctorAccountInput) {
       specialty: account.specialty as string,
       phone: account.phone as string,
     },
-    // Shown once — the server never stores or re-displays the plaintext.
     temporaryPassword: tempPassword,
   };
 }

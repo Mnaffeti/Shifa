@@ -34,6 +34,9 @@ export async function POST(request: Request) {
       data: {
         passwordHash: await bcrypt.hash(parsed.data.newPassword, 10),
         mustChangePassword: false,
+        // The back-office-issued temporary password (if any) is no longer
+        // valid once a real one is set — wipe it.
+        tempPassword: null,
       },
     });
 

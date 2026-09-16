@@ -155,6 +155,9 @@ export interface DemoLead {
   phone: string;
   specialty: string | null;
   email: string | null;
+  matricule: string | null;
+  /** Only non-null while the doctor hasn't set their own password yet. */
+  tempPassword: string | null;
   visits: number;
   createdAt: string;
   lastSeenAt: string;
