@@ -352,8 +352,21 @@ export function ChartProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function uid() {
-  return Math.random().toString(36).substr(2, 9);
+/**
+ * Client-side id for an optimistic row, before the server assigns a real one.
+ *
+ * `Math.random().toString(36).substr(2, 9)` was neither safe nor unique: it can
+ * return as little as one character (0.5 → "i"), and these ids become React
+ * keys for allergies and treatments — a collision mis-renders a clinical list.
+ * `substr` is also deprecated.
+ */
+function uid(): string {
+  // Available in every browser this app targets, but guard anyway: it is
+  // undefined on insecure origins in some browsers.
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `tmp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
 export function useChart() {

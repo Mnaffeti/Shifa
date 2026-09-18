@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage';
 import DoctorsPage from './pages/DoctorsPage';
 import RequestsPage from './pages/RequestsPage';
 import ActivityPage from './pages/ActivityPage';
+import AuditPage from './pages/AuditPage';
+import AdminsPage from './pages/AdminsPage';
 import { adminApi } from './lib/api';
 
 function AdminApp() {
@@ -33,6 +35,8 @@ function AdminApp() {
       case 'doctors': return <DoctorsPage />;
       case 'requests': return <RequestsPage onAccepted={() => setRefreshKey(k => k + 1)} />;
       case 'activity': return <ActivityPage />;
+      case 'audit': return <AuditPage />;
+      case 'admins': return <AdminsPage />;
       default: return <DoctorsPage />;
     }
   };

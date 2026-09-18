@@ -39,6 +39,61 @@ Sign in with the seeded demo doctor:
 | Matricule | `DOC-0001` |
 | Password | whatever `SEED_PASSWORD` is set to in `.env.docker` |
 
+### Record ownership
+
+Patients, appointments, consultations and reminders are owned by an account id
+(`doctorId`, or `authorId` on reminders), not by the doctor's name. The name is kept alongside as a display label
+and refreshed whenever the doctor is renamed.
+
+Upgrading a database created before this change needs the one-off backfill,
+which matches existing rows by name:
+
+```bash
+cd server && npm run db:backfill-doctor-id
+```
+
+### Free trial
+
+A doctor account provisioned through the back office gets a free trial —
+14 days by default, configurable with `TRIAL_DAYS` on the API.
+
+The clock starts at account creation, so the back office has a predictable end
+date. Once it runs out the account cannot sign in, and any session it already
+holds stops working on the next request. Patient records are untouched.
+
+Admins lift it from the Médecins page (the calendar button on a row): extend by
+7, 14 or 30 days, or grant unlimited access. Extending an already-lapsed trial
+counts from today, not from the old end date. Both actions are audited.
+
+Accounts with no `trialEndsAt` — the seeded demo doctor, and every admin — have
+unlimited access.
+
+### Administrators
+
+The back office manages its own accounts under **Administrateurs**. Two refusals
+protect against locking everyone out: you cannot delete your own account, and
+you cannot delete the last remaining admin. The `db:create-admin` script stays
+as the way to bootstrap the very first one.
+
+### Audit trail
+
+Every action an admin takes on an account — create, edit, activate, deactivate,
+delete, reset password, accept or reject a request — is recorded in `AuditLog`
+and shown under **Journal** in the back office.
+
+It is append-only: the API exposes a read endpoint only, so no operator can
+rewrite their own trail. Entries store the actor and target names as they were
+at the time, which is why a deleted doctor still reads correctly in the log.
+Passwords are never recorded.
+
+### Lost passwords
+
+A doctor signs in with a matricule and has no verified e-mail, so there is no
+self-service reset. The back office issues a new temporary password from the
+Médecins page (the circular-arrow button on a row): the old one stops working
+immediately, and the doctor must choose their own on next sign-in. Until they
+do, the API refuses every clinical request from that account.
+
 The back office lives at **http://localhost:8081** and needs an ADMIN account,
 which the seed does not create. Make one with:
 
@@ -64,6 +119,21 @@ docker compose --env-file .env.docker exec   -e ADMIN_EMAIL="admin@shifa.com" -e
 
 Both frontends proxy `/api` through their own nginx rather than calling port
 4000 directly, so the session cookie stays first-party on each origin.
+
+### One session per browser
+
+Cookies are scoped by host, **not by port**, so `localhost:8080` and
+`localhost:8081` share a single session. Signing in to one signs you into the
+other — you cannot hold a doctor and an admin session in the same browser
+window at once. This is how browsers work, not an app bug.
+
+To use both side by side, open one in a **private window** or a second browser.
+
+Each app rejects the role it is not for: the back office refuses a doctor
+session, and the doctor app shows an admin where to go instead. The API is the
+real boundary — every clinical route requires role `DOCTOR` (`requireDoctor`
+in `lib/api.ts`), so an admin session gets a 403 there regardless of which
+frontend sent it.
 
 The browser talks only to port 8080. nginx proxies `/api` to the API container so
 both share one origin and the session cookie stays first-party — the same shape

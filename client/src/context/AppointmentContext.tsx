@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { appointmentsApi } from '../lib/api';
+import { ymd } from '../lib/datetime';
 import { useAuth } from './AuthContext';
 
 export type AppointmentType = 'Consultation' | 'Follow-up' | 'Surgery' | 'Cancelled';
@@ -28,7 +29,6 @@ interface AppointmentContextType {
   cancelAppointment: (id: string) => Promise<void>;
   markAsCompleted: (id: string) => Promise<void>;
   totalAppointments: number;
-  recoveryRate: number;
   currentPatientAptId: string | null;
   setCurrentPatientApt: (id: string | null) => void;
   isModalOpen: boolean;
@@ -40,11 +40,21 @@ interface AppointmentContextType {
 
 const AppointmentContext = createContext<AppointmentContextType | undefined>(undefined);
 
-const TODAY = new Date().toISOString().split('T')[0];
-
+/**
+ * The next patient still to be seen today.
+ *
+ * The day is resolved on every call, via `ymd`, rather than captured once:
+ *  - a module-level constant froze the date at page load, so a tab left open
+ *    overnight still pointed at yesterday;
+ *  - `toISOString()` yields a UTC day, while appointment dates are wall-clock
+ *    clinic days. In Tunisia (UTC+1) that misfiled every appointment between
+ *    midnight and 01:00 onto the previous day. `ymd` formats in local time,
+ *    as the rest of the app does.
+ */
 function firstConfirmedToday(apts: Appointment[]): string | null {
+  const today = ymd();
   const sorted = apts
-    .filter(a => a.date === TODAY && (a.status === 'Confirmed' || a.status === 'Pending'))
+    .filter(a => a.date === today && (a.status === 'Confirmed' || a.status === 'Pending'))
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
   return sorted.length > 0 ? sorted[0].id : null;
 }
@@ -127,9 +137,6 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
     setAppointments(prev => prev.filter(a => a.id !== id));
   }, []);
 
-  const completed = appointments.filter(a => a.status === 'Completed').length;
-  const recoveryRate = appointments.length > 0 ? (completed / appointments.length) * 100 : 0;
-
   return (
     <AppointmentContext.Provider value={{
       appointments,
@@ -140,7 +147,6 @@ export function AppointmentProvider({ children }: { children: ReactNode }) {
       cancelAppointment,
       markAsCompleted,
       totalAppointments: appointments.length,
-      recoveryRate,
       currentPatientAptId,
       setCurrentPatientApt,
       isModalOpen,

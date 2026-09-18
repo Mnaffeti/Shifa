@@ -236,22 +236,6 @@ export const remindersApi = {
   remove: (id: string) => del<{ success: true }>(`/api/reminders/${id}`),
 };
 
-// ─── Waitlist ───────────────────────────────────────────────────────────────
-
-export interface WaitlistEntry {
-  id: string;
-  name: string;
-  phone: string;
-  reason?: string;
-  createdAt: string;
-}
-
-export const waitlistApi = {
-  list: () => get<{ entries: WaitlistEntry[] }>('/api/waitlist'),
-  add: (data: { name: string; phone: string; reason?: string }) =>
-    post<{ entry: WaitlistEntry }>('/api/waitlist', data),
-};
-
 export const healthApi = {
   check: () => get<{ status: string; database: string }>('/api/health'),
 };

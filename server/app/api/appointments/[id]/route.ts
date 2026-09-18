@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
-import { fail, forbidden, notFound, ok, parseBody, unauthorized } from '@/lib/api';
+import { fail, forbidden, notFound, ok, parseBody, requireDoctor, unauthorized } from '@/lib/api';
 import { updateAppointmentSchema } from '@/lib/schemas';
 import { serializeAppointment } from '@/lib/serializers';
 import { toDbType } from '../route';
@@ -16,6 +16,8 @@ export async function PATCH(request: Request, { params }: Params) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const { id } = await params;
     const existing = await prisma.appointment.findUnique({ where: { id } });
@@ -49,6 +51,8 @@ export async function DELETE(_request: Request, { params }: Params) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const { id } = await params;
     const existing = await prisma.appointment.findUnique({ where: { id } });

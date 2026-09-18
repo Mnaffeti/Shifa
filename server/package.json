@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:create-admin": "tsx prisma/create-admin.ts"
+    "db:create-admin": "tsx prisma/create-admin.ts",
+    "db:backfill-doctor-id": "tsx prisma/backfill-doctor-id.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",

@@ -16,25 +16,6 @@ export const unauthorized = () => fail('Non authentifié', 401);
 export const forbidden = () => fail('Accès refusé', 403);
 export const notFound = (what = 'Ressource') => fail(`${what} introuvable`, 404);
 
-/**
- * Wraps a handler so it only runs for an authenticated caller, and so any
- * thrown error becomes a 500 instead of leaking a stack trace to the client.
- */
-export function withAuth<T>(
-  handler: (user: SessionUser) => Promise<NextResponse<T>>,
-) {
-  return async (): Promise<NextResponse> => {
-    try {
-      const user = await getSessionUser();
-      if (!user) return unauthorized();
-      return await handler(user);
-    } catch (err) {
-      console.error('[api]', err);
-      return fail('Erreur serveur', 500);
-    }
-  };
-}
-
 /** Parses and validates a JSON body, returning a 400 on malformed input. */
 export async function parseBody<T>(
   request: Request,
@@ -58,13 +39,44 @@ export async function parseBody<T>(
 }
 
 /**
- * A doctor may only reach their own patients. DOCTOR is the only clinical
- * role now, so this always scopes to the caller.
+ * Clinical data is for clinicians. ADMIN operates the product — accounts,
+ * requests, activity — and must never read or write patient data.
+ *
+ * Authentication alone is not enough here: cookies ignore the port, so an
+ * admin signed in to the back office reaches these routes with a valid
+ * session. Without this check the scope-by-name filter merely returned an
+ * empty list, which looked safe but let writes through and exposed rows that
+ * carry no doctor name of their own (reminders).
+ *
+ * Returns null when the caller may proceed, or the response to send back.
  */
-export function patientScope(user: SessionUser) {
-  return { assignedDoctor: user.name };
+export function requireDoctor(user: SessionUser): NextResponse | null {
+  if (user.role !== 'DOCTOR') return forbidden();
+
+  // A pending password change is enforced here, not only by the frontend
+  // redirect: an account holding a back-office-issued temporary password —
+  // a value an admin knows, or that was just reset — must not be able to
+  // read or write clinical data through the API until the doctor has chosen
+  // their own. Only /api/auth/* stays reachable, which is what lets them.
+  if (user.mustChangePassword) {
+    return fail('Vous devez définir votre mot de passe avant de continuer', 403);
+  }
+
+  return null;
 }
 
-export function canAccessPatient(user: SessionUser, assignedDoctor: string): boolean {
-  return assignedDoctor === user.name;
+/**
+ * A doctor may only reach their own patients.
+ *
+ * Scoped by account id, not by display name. Names are neither unique nor
+ * stable: two doctors could share one — and then share each other's patients —
+ * and renaming yourself in settings used to orphan every record you owned.
+ */
+export function patientScope(user: SessionUser) {
+  return { doctorId: user.id };
+}
+
+/** Pass the patient's `doctorId`. Null means unassigned: nobody may read it. */
+export function canAccessPatient(user: SessionUser, doctorId: string | null): boolean {
+  return doctorId !== null && doctorId === user.id;
 }

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { prisma } from './prisma';
+import { isTrialExpired } from './trial';
 import type { UserRole } from '@prisma/client';
 
 /**
@@ -107,6 +108,9 @@ export interface SessionUser {
   specialty: string | null;
   phone: string | null;
   mustChangePassword: boolean;
+  isActive: boolean;
+  /** Null once converted to a paid plan, or for admins. */
+  trialEndsAt: Date | null;
 }
 
 /** Resolves the signed-in account, or null when unauthenticated. */
@@ -121,6 +125,16 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const account = await prisma.account.findUnique({ where: { id: accountId } });
   if (!account) return null;
 
+  // A revoked account must lose access at once, not when its 7-day cookie
+  // finally expires. Because this runs on every request, deactivating in the
+  // back office cuts the user off on their very next action.
+  if (!account.isActive) return null;
+
+  // Same for an expired trial. Blocking only at sign-in would leave anyone
+  // already signed in working for up to the 7-day cookie lifetime after their
+  // trial ended.
+  if (isTrialExpired(account)) return null;
+
   return {
     id: account.id,
     email: account.email,
@@ -131,5 +145,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     specialty: account.specialty,
     phone: account.phone,
     mustChangePassword: account.mustChangePassword,
+    isActive: account.isActive,
+    trialEndsAt: account.trialEndsAt,
   };
 }

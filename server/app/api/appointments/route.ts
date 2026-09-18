@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
-import { fail, notFound, ok, parseBody, unauthorized } from '@/lib/api';
+import { fail, notFound, ok, parseBody, requireDoctor, unauthorized } from '@/lib/api';
 import { createAppointmentSchema } from '@/lib/schemas';
 import { serializeAppointment } from '@/lib/serializers';
 import type { AppointmentType } from '@prisma/client';
@@ -18,6 +18,8 @@ export async function GET(request: Request) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const url = new URL(request.url);
     const date = url.searchParams.get('date');
@@ -27,11 +29,18 @@ export async function GET(request: Request) {
 
     const appointments = await prisma.appointment.findMany({
       where: {
-        // A doctor's schedule is their own — DOCTOR is the only clinical role.
-        doctor: user.name,
-        ...(date ? { date } : {}),
+        // A doctor's schedule is their own. Scoped by account id, not by
+        // display name, so a rename never hides their own appointments.
+        doctorId: user.id,
         ...(patientId ? { patientId } : {}),
-        ...(from || to ? { date: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } } : {}),
+        // `date` and `from`/`to` both target the same column, so spreading
+        // them as two keys meant the range silently overwrote an exact date.
+        // Build one clause instead: an exact date wins, otherwise the range.
+        ...(date
+          ? { date }
+          : from || to
+            ? { date: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } }
+            : {}),
       },
       orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
     });
@@ -47,6 +56,8 @@ export async function POST(request: Request) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const parsed = await parseBody(request, createAppointmentSchema);
     if (!parsed.ok) return parsed.response;
@@ -64,6 +75,10 @@ export async function POST(request: Request) {
       data: {
         ...rest,
         patientId,
+        // Ownership comes from the session, not the body; `doctor` is only the
+        // printed label.
+        doctorId: user.id,
+        doctor: user.name,
         type: toDbType(type),
         status: status ?? 'Pending',
       },

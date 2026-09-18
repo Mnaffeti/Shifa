@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
-import { canAccessPatient, fail, forbidden, notFound, ok, unauthorized } from '@/lib/api';
+import { canAccessPatient, fail, forbidden, notFound, ok, requireDoctor, unauthorized } from '@/lib/api';
 
 type Params = { params: Promise<{ id: string; attachmentId: string }> };
 
@@ -8,9 +8,12 @@ async function guard(patientId: string) {
   const user = await getSessionUser();
   if (!user) return { error: unauthorized() };
 
+  const denied = requireDoctor(user);
+  if (denied) return { error: denied };
+
   const patient = await prisma.patient.findUnique({ where: { id: patientId } });
   if (!patient) return { error: notFound('Patient') };
-  if (!canAccessPatient(user, patient.assignedDoctor)) return { error: forbidden() };
+  if (!canAccessPatient(user, patient.doctorId)) return { error: forbidden() };
 
   return { user };
 }

@@ -51,13 +51,33 @@ export async function PATCH(request: Request) {
 
     const { name, specialty, phone } = parsed.data;
 
-    const account = await prisma.account.update({
-      where: { id: user.id },
-      data: {
-        ...(name !== undefined ? { name: name.trim() } : {}),
-        ...(specialty !== undefined ? { specialty } : {}),
-        ...(phone !== undefined ? { phone: phone.trim() } : {}),
-      },
+    const account = await prisma.$transaction(async tx => {
+      const updated = await tx.account.update({
+        where: { id: user.id },
+        data: {
+          ...(name !== undefined ? { name: name.trim() } : {}),
+          ...(specialty !== undefined ? { specialty } : {}),
+          ...(phone !== undefined ? { phone: phone.trim() } : {}),
+        },
+      });
+
+      // Records are owned by doctorId, so renaming yourself no longer hides
+      // your own patients — it used to, when ownership was a name comparison.
+      // The name is still printed on those rows, so refresh the label.
+      //
+      // Signed consultations keep the name they were signed under: that field
+      // records who signed a legal document and must not be rewritten.
+      if (name !== undefined && user.role === 'DOCTOR') {
+        const label = updated.name;
+        await tx.patient.updateMany({ where: { doctorId: user.id }, data: { assignedDoctor: label } });
+        await tx.appointment.updateMany({ where: { doctorId: user.id }, data: { doctor: label } });
+        await tx.consultation.updateMany({
+          where: { doctorId: user.id, status: 'draft' },
+          data: { doctor: label },
+        });
+      }
+
+      return updated;
     });
 
     return ok({ user: serializeSessionUser(account) });

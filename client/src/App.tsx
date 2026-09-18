@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate,
+} from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppointmentProvider, useAppointments } from './context/AppointmentContext';
 import { PatientProvider } from './context/PatientContext';
@@ -13,7 +15,7 @@ import { ConsultationProvider } from './context/ConsultationContext';
 import { ReminderProvider } from './context/ReminderContext';
 
 // Components
-import Navbar from './components/Navbar';
+import Navbar, { type ViewType } from './components/Navbar';
 import AppointmentModal from './components/AppointmentModal';
 import DoctorDashboard from './components/DoctorDashboard';
 
@@ -27,27 +29,44 @@ import PatientsPage from './pages/PatientsPage';
 import SettingsPage from './pages/SettingsPage';
 import AdminRedirectNotice from './pages/AdminRedirectNotice';
 
+/**
+ * URLs are French and stable, since a doctor may bookmark or share one.
+ * The Navbar still speaks in view ids, so translate in both directions here
+ * rather than rewriting every consumer.
+ */
+const PATH_FOR: Record<ViewType, string> = {
+  dashboard: '/',
+  patients: '/patients',
+  schedule: '/agenda',
+  settings: '/parametres',
+};
+
+function viewForPath(pathname: string): ViewType {
+  if (pathname.startsWith('/patients')) return 'patients';
+  if (pathname.startsWith('/agenda')) return 'schedule';
+  if (pathname.startsWith('/parametres')) return 'settings';
+  return 'dashboard';
+}
+
 /** DOCTOR is the only clinical role — there is no more secretary view to branch on. */
 function MainLayout() {
   const { isModalOpen, setIsModalOpen } = useAppointments();
-  const [currentView, setCurrentView] = useState('dashboard');
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const renderView = () => {
-    switch (currentView) {
-      case 'dashboard': return <DoctorDashboard onNavigate={setCurrentView} />;
-      case 'schedule': return <SchedulePage />;
-      case 'patients': return <PatientsPage />;
-      case 'settings': return <SettingsPage />;
-      default: return <DoctorDashboard onNavigate={setCurrentView} />;
-    }
-  };
+  const currentView = viewForPath(location.pathname);
 
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-primary/10 selection:text-primary">
-      <Navbar currentView={currentView} onViewChange={setCurrentView} />
+      <Navbar
+        currentView={currentView}
+        onViewChange={view => navigate(PATH_FOR[view])}
+      />
 
       <main className="flex-1 max-w-[1600px] mx-auto w-full px-8 py-8">
         <AnimatePresence mode="wait">
+          {/* Keyed on the view, not the full path: opening a patient file
+              should not replay the page transition over the whole shell. */}
           <motion.div
             key={currentView}
             initial={{ opacity: 0, y: 10 }}
@@ -55,7 +74,21 @@ function MainLayout() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
           >
-            {renderView()}
+            <Routes location={location}>
+              <Route
+                path="/"
+                element={<DoctorDashboard onNavigate={view => navigate(PATH_FOR[view as ViewType] ?? '/')} />}
+              />
+              <Route path="/agenda" element={<SchedulePage />} />
+              {/* The patient file is a route of its own, so it survives a
+                  refresh and can be bookmarked or sent to a colleague. */}
+              <Route path="/patients" element={<PatientsPage />} />
+              <Route path="/patients/:patientId" element={<PatientsPage />} />
+              <Route path="/parametres" element={<SettingsPage />} />
+              {/* Unknown path: fall back to the dashboard rather than a blank
+                  screen, replacing the bad entry so Back still works. */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </motion.div>
         </AnimatePresence>
       </main>
@@ -69,11 +102,38 @@ function MainLayout() {
   );
 }
 
-type GateView = 'gate' | 'login' | 'request';
+/**
+ * Pre-login screens.
+ *
+ * These are routed too, so "request an account" is a page a doctor can be sent
+ * a link to rather than a state buried behind two clicks.
+ */
+function GateRoutes() {
+  const navigate = useNavigate();
+
+  return (
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <WelcomeGate
+            onLogin={() => navigate('/connexion')}
+            onRequestAccount={() => navigate('/demande-de-compte')}
+          />
+        }
+      />
+      <Route path="/connexion" element={<LoginPage />} />
+      <Route
+        path="/demande-de-compte"
+        element={<DoctorRequestPage onBack={() => navigate('/')} />}
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
 
 function AppContent() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const [gateView, setGateView] = useState<GateView>('gate');
 
   // The session lives in an httpOnly cookie, so on a refresh we can't know if
   // the user is signed in until /api/auth/me answers. Hold the shell until
@@ -89,29 +149,14 @@ function AppContent() {
     );
   }
 
-  if (!isAuthenticated) {
-    // Gate first; its two CTAs open the login page or the doctor
-    // account-request form. No self-signup with a password — a doctor
-    // requests an account and an admin issues the credentials.
-    if (gateView === 'gate') {
-      return (
-        <WelcomeGate
-          onLogin={() => setGateView('login')}
-          onRequestAccount={() => setGateView('request')}
-        />
-      );
-    }
-    if (gateView === 'request') {
-      return <DoctorRequestPage onBack={() => setGateView('gate')} />;
-    }
-    return <LoginPage />;
-  }
+  // Gate first; its two CTAs lead to the login page or the doctor
+  // account-request form. No self-signup with a password — a doctor requests
+  // an account and an admin issues the credentials.
+  if (!isAuthenticated) return <GateRoutes />;
 
   // A back-office-issued temporary password must be replaced before the
   // account can do anything else.
-  if (user?.mustChangePassword) {
-    return <ChangePasswordPage />;
-  }
+  if (user?.mustChangePassword) return <ChangePasswordPage />;
 
   // An admin operates the product rather than a practice: no patients, no
   // schedule. The back office is its own app now, so point them at it instead
@@ -120,9 +165,7 @@ function AppContent() {
   //
   // This is reachable without signing in here: cookies ignore the port, so an
   // admin signed in to the console on :8081 arrives with a valid session.
-  if (user?.role === 'ADMIN') {
-    return <AdminRedirectNotice />;
-  }
+  if (user?.role === 'ADMIN') return <AdminRedirectNotice />;
 
   return (
     <ChartProvider>
@@ -141,8 +184,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

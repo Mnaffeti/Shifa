@@ -19,6 +19,36 @@ export const adminCreateDoctorSchema = z.object({
   phone: z.string().min(6, 'Numéro de téléphone requis').max(40),
 });
 
+// Back office edits an existing doctor account. Every field is optional —
+// the admin may be toggling access, fixing a typo, or both.
+//
+// `matricule` is the sign-in identifier, so changing it changes how the doctor
+// logs in; the route checks it is still unique.
+export const adminUpdateDoctorSchema = z.object({
+  name: z.string().min(2, 'Nom requis').max(120).optional(),
+  matricule: z.string().min(2, 'Matricule requis').max(40).optional(),
+  specialty: z.string().min(1, 'Spécialité requise').max(80).optional(),
+  phone: z.string().min(6, 'Numéro de téléphone requis').max(40).optional(),
+  isActive: z.boolean().optional(),
+}).refine(d => Object.keys(d).length > 0, { message: 'Aucune modification fournie' });
+
+// Back office creates another admin. Unlike a doctor, an admin signs in with
+// an e-mail, and the creator sets the initial password directly — there is no
+// third party to relay a generated one to.
+export const adminCreateAdminSchema = z.object({
+  name: z.string().min(2, 'Nom requis').max(120),
+  email: z.string().email('Adresse e-mail invalide').max(160),
+  password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
+});
+
+// Free-trial controls. `extendDays` pushes the end date out from today (not
+// from the old end, so an already-expired account gets a full fresh window);
+// `convert` clears it entirely, meaning unlimited access.
+export const adminTrialSchema = z.union([
+  z.object({ extendDays: z.number().int().min(1).max(365) }),
+  z.object({ convert: z.literal(true) }),
+]);
+
 // `currentPassword` is required except right after the back office issues a
 // temporary password (mustChangePassword) — the doctor hasn't chosen a
 // password of their own yet to confirm.

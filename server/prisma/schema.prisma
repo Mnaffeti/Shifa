@@ -25,6 +25,23 @@ enum UserRole {
   ADMIN
 }
 
+/// What an admin did. Stored as an enum rather than free text so the log can
+/// be filtered reliably and a typo cannot invent a new action.
+enum AuditAction {
+  ADMIN_CREATED
+  TRIAL_EXTENDED
+  TRIAL_CONVERTED
+  ADMIN_DELETED
+  DOCTOR_CREATED
+  DOCTOR_UPDATED
+  DOCTOR_ACTIVATED
+  DOCTOR_DEACTIVATED
+  DOCTOR_DELETED
+  DOCTOR_PASSWORD_RESET
+  REQUEST_ACCEPTED
+  REQUEST_REJECTED
+}
+
 enum DoctorRequestStatus {
   PENDING
   ACCEPTED
@@ -99,8 +116,31 @@ model Account {
   /// Set when the back office issues a temporary password. Forces the
   /// doctor to choose their own before they can use the rest of the app.
   mustChangePassword Boolean @default(false)
+  /// Revocation switch. A deactivated account cannot sign in, and any session
+  /// it already holds stops working on its next request — getSessionUser
+  /// re-reads the row every time, so there is no cookie to wait out.
+  isActive     Boolean  @default(true)
+  /// Stamped on every successful sign-in. Lets the back office show real
+  /// last-seen data from Account itself rather than from the best-effort
+  /// DemoLead log, which is written outside the account transaction.
+  lastLoginAt  DateTime?
+  /// Successful sign-ins, counted on the account itself so the figure cannot
+  /// drift away from the account it describes.
+  loginCount   Int      @default(0)
+  /// End of the free trial. Null means unlimited access — admins, and doctor
+  /// accounts converted to a paid plan.
+  ///
+  /// Set at account creation, not at first sign-in: the back office needs a
+  /// predictable end date it can plan around. Once past, the account can no
+  /// longer sign in; an admin extends or converts it from the Médecins page.
+  trialEndsAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  patients      Patient[]
+  appointments  Appointment[]
+  consultations Consultation[]
+  reminders     Reminder[]
 
   @@map("accounts")
 }
@@ -123,7 +163,12 @@ model Patient {
   parentFirstName String?
   parentLastName  String?
   parentComments  String?
+  /// Display label only — what the UI prints. Authorization and counting use
+  /// doctorId, so renaming a doctor no longer detaches their records.
   assignedDoctor  String
+  /// Owning clinician. Nullable only to allow the backfill migration; every
+  /// row created through the API carries it.
+  doctorId        String?
   bloodType       String
   status          PatientStatus @default(New)
   /// "Never" in the old model is represented as null here.
@@ -132,10 +177,12 @@ model Patient {
   createdAt       String
   updatedAt       DateTime      @updatedAt
 
+  doctor        Account?       @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   appointments  Appointment[]
   consultations Consultation[]
   chart         Chart?
 
+  @@index([doctorId])
   @@index([assignedDoctor])
   @@index([status])
   @@map("patients")
@@ -147,7 +194,9 @@ model Appointment {
   id          String            @id @default(cuid())
   patientId   String
   patientName String
+  /// Display label only; doctorId is the real owner. See Patient.assignedDoctor.
   doctor      String
+  doctorId    String?
   /// yyyy-MM-dd wall-clock clinic day.
   date        String
   /// "HH:MM" wall-clock times, not timezone-shifted.
@@ -161,9 +210,11 @@ model Appointment {
   updatedAt   DateTime          @updatedAt
 
   patient       Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorAccount Account?       @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   consultations Consultation[]
 
   @@index([patientId])
+  @@index([doctorId, date])
   @@index([doctor, date])
   @@index([date, status])
   @@map("appointments")
@@ -313,7 +364,10 @@ model Consultation {
   patientId     String
   appointmentId String?
   date          String
+  /// Display label only; doctorId is the real owner. Kept verbatim on a signed
+  /// consultation, which is a legal record of who signed it.
   doctor        String
+  doctorId      String?
   /// SOAP note, flattened from the nested `soap` object.
   subjectif     String             @default("")
   objectif      String             @default("")
@@ -330,6 +384,7 @@ model Consultation {
   updatedAt     DateTime           @updatedAt
 
   patient     Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorAccount Account?       @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   appointment Appointment?     @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   ordonnance  OrdonnanceItem[]
   addenda     Addendum[]
@@ -337,6 +392,7 @@ model Consultation {
 
   @@index([patientId])
   @@index([appointmentId])
+  @@index([doctorId, date])
   @@index([doctor, date])
   @@map("consultations")
 }
@@ -373,24 +429,67 @@ model Addendum {
 
 // ─── Reminders (was: shifa_reminders) ───────────────────────────────────────
 
+/// A clinician's private memo board. Scoped to its author: `authorName` is a
+/// display label, `authorId` is what every read and write is filtered by.
 model Reminder {
   id         String   @id @default(cuid())
   text       String
   dueTime    String?
   authorRole UserRole
   authorName String
+  /// Owning account. Nullable only to allow the backfill migration; every
+  /// reminder created through the API carries it.
+  authorId   String?
   done       Boolean  @default(false)
   createdAt  DateTime @default(now())
 
+  author Account? @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, done])
   @@index([done])
   @@map("reminders")
 }
 
 // ─── Waitlist (was: WaitlistModal localStorage store) ───────────────────────
 
-/// Signup log for the back office: who registered, when, and how often they
-/// have signed in since. Kept separate from Account so the record survives if
-/// the account is later removed.
+/// Append-only record of every back-office action on an account.
+///
+/// Deliberately denormalised: actorName and targetLabel are copied in at write
+/// time rather than joined at read time. An audit entry must still read
+/// correctly after the account it refers to is renamed or deleted — a log that
+/// changes retroactively is not an audit trail.
+///
+/// Never updated or deleted by the application.
+model AuditLog {
+  id         String      @id @default(cuid())
+  action     AuditAction
+  /// Who performed it. Null if that admin account was later removed.
+  actorId    String?
+  /// Their name at the time of the action.
+  actorName  String
+  /// The account acted upon, when the action targets one.
+  targetId   String?
+  /// Its identifying label at the time, e.g. "Dr. Youssef (DOC-0001)".
+  targetLabel String
+  /// Human-readable specifics, e.g. which fields changed. Never a password.
+  details    String?
+  createdAt  DateTime    @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([targetId])
+  @@map("audit_logs")
+}
+
+/// DEPRECATED — no longer read or written by the application.
+///
+/// It logged registrations and sign-in counts, but was updated outside the
+/// account transaction, so it drifted: accounts existed with no lead row, and
+/// the back office showed an empty activity list for doctors signing in daily.
+/// Account.lastLoginAt and Account.loginCount replaced it.
+///
+/// The table is kept for now so existing history is not destroyed; drop it once
+/// you have confirmed nothing needs that history.
 model DemoLead {
   id          String   @id @default(cuid())
   name        String

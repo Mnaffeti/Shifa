@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
-import { fail, ok, parseBody, patientScope, unauthorized } from '@/lib/api';
+import { fail, ok, parseBody, patientScope, requireDoctor, unauthorized } from '@/lib/api';
 import { createPatientSchema } from '@/lib/schemas';
 import { serializePatient } from '@/lib/serializers';
 
@@ -9,6 +9,8 @@ export async function GET() {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const patients = await prisma.patient.findMany({
       where: patientScope(user),
@@ -50,16 +52,17 @@ export async function POST(request: Request) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const parsed = await parseBody(request, createPatientSchema);
     if (!parsed.ok) return parsed.response;
 
     const data = parsed.data;
 
-    // A doctor can only file patients under their own name.
-    if (user.role === 'DOCTOR' && data.assignedDoctor !== user.name) {
-      return fail('Un médecin ne peut créer un dossier que pour lui-même', 403);
-    }
+    // Ownership is taken from the session, never from the request body: the
+    // caller can only ever file a patient under themselves. assignedDoctor
+    // stays as the display label and is overwritten to match.
 
     const patient = await prisma.$transaction(async tx => {
       const id = await nextPatientId(tx);
@@ -67,6 +70,8 @@ export async function POST(request: Request) {
         data: {
           ...data,
           id,
+          doctorId: user.id,
+          assignedDoctor: user.name,
           status: data.status ?? 'New',
           lastVisit: null,
           avatar: `https://picsum.photos/seed/patient-${id.toLowerCase()}/100/100`,

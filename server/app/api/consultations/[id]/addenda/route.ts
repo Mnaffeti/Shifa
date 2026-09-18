@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
-import { canAccessPatient, fail, forbidden, notFound, ok, parseBody, unauthorized } from '@/lib/api';
+import { canAccessPatient, fail, forbidden, notFound, ok, parseBody, requireDoctor, unauthorized } from '@/lib/api';
 import { addendumSchema } from '@/lib/schemas';
 import { serializeConsultation } from '@/lib/serializers';
 import { CONSULTATION_INCLUDE } from '../../route';
@@ -16,6 +16,8 @@ export async function POST(request: Request, { params }: Params) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const { id } = await params;
     const existing = await prisma.consultation.findUnique({
@@ -23,7 +25,7 @@ export async function POST(request: Request, { params }: Params) {
       include: { patient: true },
     });
     if (!existing) return notFound('Consultation');
-    if (!canAccessPatient(user, existing.patient.assignedDoctor)) return forbidden();
+    if (!canAccessPatient(user, existing.patient.doctorId)) return forbidden();
 
     const parsed = await parseBody(request, addendumSchema);
     if (!parsed.ok) return parsed.response;

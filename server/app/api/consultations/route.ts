@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
-import { canAccessPatient, fail, forbidden, notFound, ok, parseBody, unauthorized } from '@/lib/api';
+import { canAccessPatient, fail, forbidden, notFound, ok, parseBody, requireDoctor, unauthorized } from '@/lib/api';
 import { createConsultationSchema } from '@/lib/schemas';
 import { serializeConsultation } from '@/lib/serializers';
 
@@ -15,6 +15,8 @@ export async function GET(request: Request) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const url = new URL(request.url);
     const patientId = url.searchParams.get('patientId');
@@ -25,7 +27,7 @@ export async function GET(request: Request) {
         ...(patientId ? { patientId } : {}),
         ...(appointmentId ? { appointmentId } : {}),
         // A doctor only sees consultations for patients on their list.
-        ...(user.role === 'DOCTOR' ? { patient: { assignedDoctor: user.name } } : {}),
+        ...(user.role === 'DOCTOR' ? { patient: { doctorId: user.id } } : {}),
       },
       include: CONSULTATION_INCLUDE,
       orderBy: { date: 'desc' },
@@ -47,6 +49,8 @@ export async function POST(request: Request) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const parsed = await parseBody(request, createConsultationSchema);
     if (!parsed.ok) return parsed.response;
@@ -55,7 +59,7 @@ export async function POST(request: Request) {
 
     const patient = await prisma.patient.findUnique({ where: { id: patientId } });
     if (!patient) return notFound('Patient');
-    if (!canAccessPatient(user, patient.assignedDoctor)) return forbidden();
+    if (!canAccessPatient(user, patient.doctorId)) return forbidden();
 
     if (appointmentId) {
       const existing = await prisma.consultation.findFirst({
@@ -74,7 +78,8 @@ export async function POST(request: Request) {
     }
 
     const consultation = await prisma.consultation.create({
-      data: { patientId, appointmentId: appointmentId ?? null, date, doctor },
+      // Ownership from the session; `doctor` is the label kept on the record.
+      data: { patientId, appointmentId: appointmentId ?? null, date, doctor, doctorId: user.id },
       include: CONSULTATION_INCLUDE,
     });
 

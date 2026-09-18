@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { prisma } from './prisma';
+import { trialEndFromNow } from './trial';
 
 /** Unambiguous alphabet — no 0/O/1/I — for a password read aloud or retyped. */
 const PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -47,29 +48,11 @@ export async function provisionDoctorAccount(input: DoctorAccountInput) {
       phone: input.phone.trim(),
       specialty: input.specialty,
       mustChangePassword: true,
+      // The free-trial clock starts here, at creation — not at first sign-in.
+      trialEndsAt: trialEndFromNow(),
       avatar: `https://picsum.photos/seed/${encodeURIComponent(trimmedMatricule)}/100/100`,
     },
   });
-
-  // Registration log for the back office. Best-effort: never block account
-  // creation because the analytics row could not be written.
-  try {
-    await prisma.demoLead.upsert({
-      where: { name_phone: { name: displayName, phone: input.phone.trim() } },
-      create: {
-        name: displayName,
-        phone: input.phone.trim(),
-        specialty: input.specialty,
-        accountId: account.id,
-      },
-      update: {
-        specialty: input.specialty,
-        accountId: account.id,
-      },
-    });
-  } catch (err) {
-    console.error('[provisionDoctorAccount] lead log failed', err);
-  }
 
   return {
     doctor: {

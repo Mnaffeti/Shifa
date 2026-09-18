@@ -75,6 +75,10 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
 
   // Pending autosave timers, keyed by consultation id.
   const saveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  // Autosave requests currently in flight, keyed by consultation id. Signing
+  // awaits these: a write that left before the sign request can still land
+  // after it, and the server rejects edits to a signed consultation.
+  const inFlight = useRef<Map<string, Promise<unknown>>>(new Map());
   // Draft ids currently being created, so a double render can't create twice.
   const creating = useRef<Set<string>>(new Set());
 
@@ -122,15 +126,19 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
         // Signed consultations are immutable server-side; don't attempt a write.
         if (!c || c.status === 'signed') return current;
 
-        consultationsApi.update(id, {
+        const request = consultationsApi.update(id, {
           soap: c.soap,
           diagnoses: c.diagnoses,
           ...(c.constantes ? { constantes: c.constantes } : {}),
           ordonnance: c.ordonnance,
         }).catch(err => {
           setError(err instanceof Error ? err.message : 'Enregistrement impossible');
+        }).finally(() => {
+          // Only clear if this is still the latest request for that id.
+          if (inFlight.current.get(id) === request) inFlight.current.delete(id);
         });
 
+        inFlight.current.set(id, request);
         return current;
       });
     }, AUTOSAVE_MS));
@@ -201,25 +209,45 @@ export function ConsultationProvider({ children }: { children: ReactNode }) {
 
   // ── Lifecycle actions: awaited, since they change legal status ────────────
 
+  /**
+   * Signs a consultation, making it immutable server-side.
+   *
+   * Everything on screen must reach the server *before* the sign request, or
+   * it is lost: the server rejects edits to a signed consultation, silently
+   * from the user's point of view. Two ways that used to happen —
+   *
+   *  - the last keystrokes were still inside the 800ms autosave window, or
+   *  - the autosave had fired and its request was still in flight,
+   *
+   * and neither was covered by only flushing a *pending timer*. So: cancel any
+   * timer, wait for any in-flight write, then write the current state once
+   * more unconditionally. One extra request per signature is a fair price for
+   * not dropping a clinician's last sentence from a legal record.
+   */
   const signConsultation = useCallback(async (id: string, doctor: string) => {
-    // Flush any queued edits first, or they'd be rejected once signed.
     const pending = saveTimers.current.get(id);
     if (pending) {
       clearTimeout(pending);
       saveTimers.current.delete(id);
-      const c = consultations.find(x => x.id === id);
-      if (c) {
-        await consultationsApi.update(id, {
-          soap: c.soap,
-          diagnoses: c.diagnoses,
-          ...(c.constantes ? { constantes: c.constantes } : {}),
-          ordonnance: c.ordonnance,
-        });
-      }
+    }
+
+    // An earlier autosave may still be travelling; let it land first so it
+    // cannot overtake the sign request.
+    const flying = inFlight.current.get(id);
+    if (flying) await flying.catch(() => {});
+
+    const c = consultations.find(x => x.id === id);
+    if (c && c.status !== 'signed') {
+      await consultationsApi.update(id, {
+        soap: c.soap,
+        diagnoses: c.diagnoses,
+        ...(c.constantes ? { constantes: c.constantes } : {}),
+        ordonnance: c.ordonnance,
+      });
     }
 
     const { consultation } = await consultationsApi.sign(id, doctor);
-    setConsultations(prev => prev.map(c => (c.id === id ? consultation : c)));
+    setConsultations(prev => prev.map(x => (x.id === id ? consultation : x)));
   }, [consultations]);
 
   const unlockConsultation = useCallback(async (id: string) => {

@@ -50,6 +50,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required — see .env.docker}
       SEED_PASSWORD: ${SEED_PASSWORD:?SEED_PASSWORD is required — see .env.docker}
       SEED_ON_START: ${SEED_ON_START:-true}
+      TRIAL_DAYS: ${TRIAL_DAYS:-14}
       # The image runs NODE_ENV=production, and seed.ts refuses to touch a
       # production database without this explicit opt-in. That guard is
       # what protects the real deployment; here the database is a local

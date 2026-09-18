@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
-import { canAccessPatient, fail, forbidden, notFound, ok, parseBody, unauthorized } from '@/lib/api';
+import { canAccessPatient, fail, forbidden, notFound, ok, parseBody, requireDoctor, unauthorized } from '@/lib/api';
 import { updatePatientSchema } from '@/lib/schemas';
 import { serializePatient } from '@/lib/serializers';
 
@@ -10,12 +10,14 @@ export async function GET(_request: Request, { params }: Params) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const { id } = await params;
     const patient = await prisma.patient.findUnique({ where: { id } });
 
     if (!patient) return notFound('Patient');
-    if (!canAccessPatient(user, patient.assignedDoctor)) return forbidden();
+    if (!canAccessPatient(user, patient.doctorId)) return forbidden();
 
     return ok({ patient: serializePatient(patient) });
   } catch (err) {
@@ -28,11 +30,13 @@ export async function PATCH(request: Request, { params }: Params) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const { id } = await params;
     const existing = await prisma.patient.findUnique({ where: { id } });
     if (!existing) return notFound('Patient');
-    if (!canAccessPatient(user, existing.assignedDoctor)) return forbidden();
+    if (!canAccessPatient(user, existing.doctorId)) return forbidden();
 
     const parsed = await parseBody(request, updatePatientSchema);
     if (!parsed.ok) return parsed.response;
@@ -63,11 +67,13 @@ export async function DELETE(_request: Request, { params }: Params) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const { id } = await params;
     const existing = await prisma.patient.findUnique({ where: { id } });
     if (!existing) return notFound('Patient');
-    if (!canAccessPatient(user, existing.assignedDoctor)) return forbidden();
+    if (!canAccessPatient(user, existing.doctorId)) return forbidden();
 
     await prisma.patient.delete({ where: { id } });
     return ok({ success: true });

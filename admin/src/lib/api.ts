@@ -73,6 +73,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 const get = <T>(path: string) => request<T>(path);
 const post = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: 'POST', ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+const patch = <T>(path: string, body: unknown) =>
+  request<T>(path, { method: 'PATCH', body: JSON.stringify(body) });
+const del = <T>(path: string) => request<T>(path, { method: 'DELETE' });
 
 // ─── Auth ───────────────────────────────────────────────────────────────────
 
@@ -107,7 +110,7 @@ export interface DoctorRequest {
   createdAt: string;
 }
 
-/** A real doctor account, as opposed to the DemoLead registration log. */
+/** A doctor account, with the activity counters kept on the row itself. */
 export interface DoctorAccount {
   id: string;
   name: string;
@@ -115,18 +118,29 @@ export interface DoctorAccount {
   specialty: string | null;
   phone: string | null;
   mustChangePassword: boolean;
+  /** False once the back office revokes access; the account cannot sign in. */
+  isActive: boolean;
+  /** Null until the doctor signs in for the first time. */
+  lastLoginAt: string | null;
+  /** Successful sign-ins, counted on the account itself. */
+  loginCount: number;
+  /** End of the free trial; null once converted to unlimited access. */
+  trialEndsAt: string | null;
+  /** Whole days left. Null = unlimited, 0 = expired (sign-in blocked). */
+  trialDaysLeft: number | null;
   createdAt: string;
 }
 
-export interface DemoLead {
-  id: string;
-  name: string;
-  phone: string;
-  specialty: string | null;
-  email: string | null;
-  visits: number;
-  createdAt: string;
-  lastSeenAt: string;
+/**
+ * Activity counters for one doctor. Counters only — an admin never sees
+ * patient names or any clinical content.
+ */
+export interface DoctorStats {
+  patients: number;
+  appointments: number;
+  consultations: number;
+  /** Appointments from today onward that are still pending or confirmed. */
+  upcoming: number;
 }
 
 /** Issued once when an account is provisioned; never re-displayed. */
@@ -135,14 +149,86 @@ export interface ProvisionResult {
   temporaryPassword: string;
 }
 
-export const adminApi = {
-  /** Registration log — may drift from the account list; see doctors.list. */
-  leads: () => get<{ leads: DemoLead[] }>('/api/demo/leads'),
+/** An administrator account. */
+export interface AdminAccount {
+  id: string;
+  name: string;
+  email: string | null;
+  lastLoginAt: string | null;
+  loginCount: number;
+  createdAt: string;
+  /** True for the signed-in admin's own row. */
+  isSelf: boolean;
+}
 
+/** One back-office action, as recorded at the time it happened. */
+export type AuditAction =
+  | 'ADMIN_CREATED' | 'ADMIN_DELETED'
+  | 'TRIAL_EXTENDED' | 'TRIAL_CONVERTED'
+  | 'DOCTOR_CREATED' | 'DOCTOR_UPDATED' | 'DOCTOR_ACTIVATED' | 'DOCTOR_DEACTIVATED'
+  | 'DOCTOR_DELETED' | 'DOCTOR_PASSWORD_RESET' | 'REQUEST_ACCEPTED' | 'REQUEST_REJECTED';
+
+export interface AuditEntry {
+  id: string;
+  action: AuditAction;
+  /** The admin's name at the time — not re-resolved, so it never shifts. */
+  actorName: string;
+  /** The account acted upon, labelled as it was then. */
+  targetLabel: string;
+  details: string | null;
+  createdAt: string;
+}
+
+export const adminApi = {
   doctors: {
     list: () => get<{ doctors: DoctorAccount[] }>('/api/admin/doctors'),
     create: (data: { name: string; matricule: string; specialty: string; phone: string }) =>
       post<ProvisionResult>('/api/admin/doctors', data),
+    /** Edit details, or revoke/restore access with `isActive`. */
+    update: (id: string, data: Partial<{
+      name: string; matricule: string; specialty: string; phone: string; isActive: boolean;
+    }>) => patch<{ doctor: DoctorAccount }>(`/api/admin/doctors/${id}`, data),
+    /** Only permitted for an account that never signed in and owns no patients. */
+    remove: (id: string) => del<{ success: true }>(`/api/admin/doctors/${id}`),
+    /**
+     * Issues a fresh temporary password, returned once. Use when a doctor
+     * lost the one relayed at provisioning — there is no self-service reset,
+     * since accounts sign in with a matricule and carry no verified e-mail.
+     */
+    /** Grant more trial days, or convert to unlimited access. */
+    trial: (id: string, data: { extendDays: number } | { convert: true }) =>
+      post<{ doctor: { id: string; name: string; trialEndsAt: string | null; trialDaysLeft: number | null } }>(
+        `/api/admin/doctors/${id}/trial`, data,
+      ),
+    /** Counters for the detail panel; carries no patient data. */
+    stats: (id: string) => get<{ stats: DoctorStats }>(`/api/admin/doctors/${id}/stats`),
+    resetPassword: (id: string) =>
+      post<{
+        doctor: { name: string; matricule: string };
+        temporaryPassword: string;
+      }>(`/api/admin/doctors/${id}/reset-password`),
+  },
+
+  admins: {
+    list: () => get<{ admins: AdminAccount[] }>('/api/admin/admins'),
+    create: (data: { name: string; email: string; password: string }) =>
+      post<{ admin: AdminAccount }>('/api/admin/admins', data),
+    /** Refused for your own account, and for the last remaining admin. */
+    remove: (id: string) => del<{ success: true }>(`/api/admin/admins/${id}`),
+  },
+
+  /** Read-only: there is no endpoint to edit or remove an entry. */
+  audit: {
+    list: (params?: { action?: AuditAction; targetId?: string; limit?: number; cursor?: string }) => {
+      const q = new URLSearchParams(
+        Object.entries(params ?? {})
+          .filter(([, v]) => v !== undefined && v !== '')
+          .map(([k, v]) => [k, String(v)]),
+      ).toString();
+      return get<{ entries: AuditEntry[]; nextCursor: string | null }>(
+        `/api/admin/audit${q ? `?${q}` : ''}`,
+      );
+    },
   },
 
   doctorRequests: {

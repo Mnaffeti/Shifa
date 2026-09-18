@@ -1,13 +1,15 @@
 import { type ReactNode } from 'react';
-import { LogOut, ShieldCheck, Stethoscope, Inbox, Activity } from 'lucide-react';
+import { LogOut, ShieldCheck, Stethoscope, Inbox, Activity, FileClock, ShieldPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-export type AdminView = 'doctors' | 'requests' | 'activity';
+export type AdminView = 'doctors' | 'requests' | 'activity' | 'audit' | 'admins';
 
 const NAV: { id: AdminView; label: string; icon: typeof Stethoscope }[] = [
   { id: 'doctors', label: 'Médecins', icon: Stethoscope },
   { id: 'requests', label: 'Demandes', icon: Inbox },
   { id: 'activity', label: 'Activité', icon: Activity },
+  { id: 'audit', label: 'Journal', icon: FileClock },
+  { id: 'admins', label: 'Administrateurs', icon: ShieldPlus },
 ];
 
 interface Props {

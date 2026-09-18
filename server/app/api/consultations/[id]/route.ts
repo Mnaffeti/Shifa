@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
-import { canAccessPatient, fail, forbidden, notFound, ok, parseBody, unauthorized } from '@/lib/api';
+import { canAccessPatient, fail, forbidden, notFound, ok, parseBody, requireDoctor, unauthorized } from '@/lib/api';
 import { updateConsultationSchema } from '@/lib/schemas';
 import { serializeConsultation } from '@/lib/serializers';
 import { CONSULTATION_INCLUDE } from '../route';
@@ -11,6 +11,8 @@ export async function GET(_request: Request, { params }: Params) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const { id } = await params;
     const consultation = await prisma.consultation.findUnique({
@@ -18,7 +20,7 @@ export async function GET(_request: Request, { params }: Params) {
       include: { ...CONSULTATION_INCLUDE, patient: true },
     });
     if (!consultation) return notFound('Consultation');
-    if (!canAccessPatient(user, consultation.patient.assignedDoctor)) return forbidden();
+    if (!canAccessPatient(user, consultation.patient.doctorId)) return forbidden();
 
     return ok({ consultation: serializeConsultation(consultation) });
   } catch (err) {
@@ -37,6 +39,8 @@ export async function PATCH(request: Request, { params }: Params) {
   try {
     const user = await getSessionUser();
     if (!user) return unauthorized();
+    const denied = requireDoctor(user);
+    if (denied) return denied;
 
     const { id } = await params;
     const existing = await prisma.consultation.findUnique({
@@ -44,7 +48,7 @@ export async function PATCH(request: Request, { params }: Params) {
       include: { patient: true },
     });
     if (!existing) return notFound('Consultation');
-    if (!canAccessPatient(user, existing.patient.assignedDoctor)) return forbidden();
+    if (!canAccessPatient(user, existing.patient.doctorId)) return forbidden();
 
     if (existing.status === 'signed') {
       return fail(

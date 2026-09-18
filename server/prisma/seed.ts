@@ -55,7 +55,7 @@ function addMinutes(time: string, minutes: number): string {
 }
 
 /** Rebuilds the current-week schedule the frontend used to generate at runtime. */
-function generateWeek(patientNames: Map<string, string>) {
+function generateWeek(patientNames: Map<string, string>, doctorId: string, doctorName: string) {
   const today = new Date().toISOString().split('T')[0];
   const todayUTC = new Date(today + 'T00:00:00Z');
   const monday = new Date(todayUTC);
@@ -64,7 +64,7 @@ function generateWeek(patientNames: Map<string, string>) {
   const out: Array<{
     patientId: string; patientName: string; doctor: string; date: string;
     startTime: string; endTime: string; duration: number;
-    type: AppointmentType; status: AppointmentStatus;
+    type: AppointmentType; status: AppointmentStatus; doctorId: string;
   }> = [];
 
   let counter = 1;
@@ -91,7 +91,8 @@ function generateWeek(patientNames: Map<string, string>) {
       out.push({
         patientId,
         patientName: patientNames.get(patientId) ?? patientId,
-        doctor: 'Dr. Youssef',
+        doctor: doctorName,
+        doctorId,
         date: dateStr,
         startTime,
         endTime: addMinutes(startTime, duration),
@@ -127,9 +128,11 @@ async function main() {
   }
 
   const hash = await bcrypt.hash(seedPassword, 10);
+  // Captured below so seeded patients and appointments carry a real doctorId —
+  // ownership is by account id, not by name.
   // Doctors sign in with a matricule, issued by the back office, rather than
   // e-mail — this demo account mirrors that.
-  await prisma.account.upsert({
+  const seedDoctor = await prisma.account.upsert({
     where: { matricule: 'DOC-0001' },
     create: {
       matricule: 'DOC-0001', passwordHash: hash, name: 'Dr. Youssef',
@@ -146,7 +149,8 @@ async function main() {
       where: { id: p.id },
       create: {
         ...p,
-        assignedDoctor: 'Dr. Youssef',
+        assignedDoctor: seedDoctor.name,
+        doctorId: seedDoctor.id,
         avatar: avatarFor(p.firstName, p.lastName),
         chart: { create: {} },
       },
@@ -198,7 +202,7 @@ async function main() {
   const existingAppointments = await prisma.appointment.count();
   if (existingAppointments === 0) {
     const names = new Map(PATIENTS.map(p => [p.id, `${p.firstName} ${p.lastName}`]));
-    const week = generateWeek(names);
+    const week = generateWeek(names, seedDoctor.id, seedDoctor.name);
     await prisma.appointment.createMany({ data: week });
     console.log(`  appointments: ${week.length}`);
   } else {
@@ -209,8 +213,8 @@ async function main() {
   if (await prisma.reminder.count() === 0) {
     await prisma.reminder.createMany({
       data: [
-        { text: 'Transmettre les résultats de laboratoire à Ahmed Mansour', dueTime: '14:00', authorRole: 'DOCTOR', authorName: 'Dr. Youssef', done: false },
-        { text: 'Revoir la posologie avant la prochaine consultation', authorRole: 'DOCTOR', authorName: 'Dr. Youssef', done: false },
+        { text: 'Transmettre les résultats de laboratoire à Ahmed Mansour', dueTime: '14:00', authorRole: 'DOCTOR', authorName: seedDoctor.name, authorId: seedDoctor.id, done: false },
+        { text: 'Revoir la posologie avant la prochaine consultation', authorRole: 'DOCTOR', authorName: seedDoctor.name, authorId: seedDoctor.id, done: false },
       ],
     });
     console.log('  reminders: 2');

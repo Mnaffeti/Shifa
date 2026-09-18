@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
 import { fail, forbidden, notFound, ok, unauthorized } from '@/lib/api';
 import { provisionDoctorAccount } from '@/lib/provision-doctor';
+import { recordAudit } from '@/lib/audit';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -34,6 +35,13 @@ export async function POST(_request: Request, { params }: Params) {
     }
 
     await prisma.doctorRequest.update({ where: { id }, data: { status: 'ACCEPTED' } });
+
+    await recordAudit({
+      actor: user,
+      action: 'REQUEST_ACCEPTED',
+      targetLabel: `${result.doctor.name} (${result.doctor.matricule})`,
+      details: `Demande du ${doctorRequest.createdAt.toISOString().split('T')[0]} · ${result.doctor.specialty}`,
+    });
 
     return ok(result);
   } catch (err) {

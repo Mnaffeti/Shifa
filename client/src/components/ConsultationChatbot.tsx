@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Send, Loader2 } from 'lucide-react';
-import chatbotIcon from '../assests/chatbotIcon.avif';
+import chatbotIcon from '../assets/chatbotIcon.avif';
 
 /**
  * Floating assistant for the consultation page.

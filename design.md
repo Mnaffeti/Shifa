@@ -1,4 +1,15 @@
 # Medica Dashboard — Design Specification
+
+> **⚠️ OBSOLETE — kept for reference only. Do not follow this document.**
+>
+> It describes an earlier "Medica" dashboard (revenue charts, Plus Jakarta Sans
+> / DM Sans, a 3-column stats layout) that the product moved away from. The
+> current design is the calm launcher described in `CLAUDE.md`, and the real
+> tokens live in `client/src/index.css` — Inter + IBM Plex Mono, not the fonts
+> named below.
+>
+> Where this file and `client/src/index.css` disagree, the code is right.
+
 > Reference document for dev agents to replicate or extend the Medica healthcare dashboard UI.
 
 ---

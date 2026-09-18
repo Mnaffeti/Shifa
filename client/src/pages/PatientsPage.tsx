@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { AlertTriangle } from 'lucide-react';
 import { usePatients, Patient } from '../context/PatientContext';
@@ -16,7 +17,7 @@ import { buildPatientFiles, PatientFile } from '../lib/patientFiles';
  * consultation history as metadata — rather than as spreadsheet rows.
  */
 export default function PatientsPage() {
-  const { patients, deletePatient } = usePatients();
+  const { patients, deletePatient, isLoading } = usePatients();
   const { appointments } = useAppointments();
   const { consultations } = useConsultations();
   const { user } = useAuth();
@@ -24,7 +25,11 @@ export default function PatientsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Patient | null>(null);
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+
+  // The open file lives in the URL (/patients/PT-001), not in local state, so
+  // it survives a refresh and can be bookmarked or sent to a colleague.
+  const { patientId } = useParams<{ patientId: string }>();
+  const navigate = useNavigate();
 
   // DOCTOR is the only clinical role now — every caller here manages their
   // own patients.
@@ -40,16 +45,33 @@ export default function PatientsPage() {
     [visiblePatients, appointments, consultations],
   );
 
-  if (selectedPatient) {
-    const current = patients.find(p => p.id === selectedPatient.id) ?? selectedPatient;
-    return <PatientChartView patient={current} onBack={() => setSelectedPatient(null)} />;
+  if (patientId) {
+    const current = patients.find(p => p.id === patientId);
+
+    // Still loading: the list arrives asynchronously, so an unknown id here is
+    // not yet an error.
+    if (!current && isLoading) {
+      return (
+        <div className="py-20 text-center">
+          <span className="inline-block w-7 h-7 rounded-full border-2 border-border-subtle border-t-primary animate-spin" />
+          <p className="text-[13px] font-medium text-text-muted mt-3">Chargement du dossier…</p>
+        </div>
+      );
+    }
+
+    // A real dead end — a stale bookmark, or another doctor's patient.
+    if (!current) {
+      return <UnknownPatient onBack={() => navigate('/patients')} />;
+    }
+
+    return <PatientChartView patient={current} onBack={() => navigate('/patients')} />;
   }
 
   return (
     <div className="max-w-[1180px] mx-auto">
       <PatientArchive
         files={files}
-        onOpen={(file: PatientFile) => setSelectedPatient(file.patient)}
+        onOpen={(file: PatientFile) => navigate(`/patients/${file.patient.id}`)}
         onCreatePatient={() => setIsAddModalOpen(true)}
         canCreate={canAddOrEdit}
         onEdit={canAddOrEdit ? (file: PatientFile) => setEditingPatient(file.patient) : undefined}
@@ -77,6 +99,35 @@ export default function PatientsPage() {
           setPendingDelete(null);
         }}
       />
+    </div>
+  );
+}
+
+// ─── Unknown patient ────────────────────────────────────────────────────────
+
+/**
+ * Reached from a stale bookmark, a mistyped id, or a patient belonging to
+ * another doctor — the API scopes by doctorId, so those simply are not in the
+ * list. Say so plainly instead of rendering an empty chart.
+ */
+function UnknownPatient({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="max-w-[560px] mx-auto py-16 text-center">
+      <span className="w-14 h-14 rounded-2xl bg-amber-50 grid place-items-center mx-auto">
+        <AlertTriangle size={24} className="text-amber-600" strokeWidth={1.75} />
+      </span>
+      <h1 className="text-[22px] font-semibold text-text-primary tracking-tight mt-5">
+        Dossier introuvable
+      </h1>
+      <p className="text-[14px] text-text-muted font-normal leading-relaxed mt-2.5">
+        Ce dossier n'existe pas, ou ne fait pas partie de vos patients.
+      </p>
+      <button
+        onClick={onBack}
+        className="mt-6 h-11 px-6 rounded-[14px] bg-primary text-white text-[13.5px] font-semibold hover:brightness-110 transition-all active:scale-[0.98]"
+      >
+        Retour aux patients
+      </button>
     </div>
   );
 }

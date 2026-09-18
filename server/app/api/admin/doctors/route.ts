@@ -3,14 +3,15 @@ import { getSessionUser } from '@/lib/auth';
 import { fail, forbidden, ok, parseBody, unauthorized } from '@/lib/api';
 import { adminCreateDoctorSchema } from '@/lib/schemas';
 import { provisionDoctorAccount } from '@/lib/provision-doctor';
+import { recordAudit } from '@/lib/audit';
+import { trialDaysLeft } from '@/lib/trial';
 
 /**
  * GET /api/admin/doctors — the real doctor accounts.
  *
- * ADMIN only. Distinct from /api/demo/leads, which reads DemoLead: that table
- * is a best-effort registration log written outside the account transaction,
- * so it can silently drift. This lists Account itself, which is what the back
- * office must act on.
+ * ADMIN only. Account is the single source of truth for the back office: it
+ * carries the identity, the access flag and the activity counters, so nothing
+ * can drift away from the row it describes.
  */
 export async function GET() {
   try {
@@ -31,6 +32,12 @@ export async function GET() {
         specialty: d.specialty,
         phone: d.phone,
         mustChangePassword: d.mustChangePassword,
+        isActive: d.isActive,
+        lastLoginAt: d.lastLoginAt?.toISOString() ?? null,
+        loginCount: d.loginCount,
+        trialEndsAt: d.trialEndsAt?.toISOString() ?? null,
+        /** Null = unlimited access; 0 = expired. */
+        trialDaysLeft: trialDaysLeft(d),
         createdAt: d.createdAt.toISOString(),
       })),
     });
@@ -57,6 +64,15 @@ export async function POST(request: Request) {
     if (!parsed.ok) return parsed.response;
 
     const result = await provisionDoctorAccount(parsed.data);
+
+    // The temporary password is deliberately absent from the log.
+    await recordAudit({
+      actor: user,
+      action: 'DOCTOR_CREATED',
+      targetLabel: `${result.doctor.name} (${result.doctor.matricule})`,
+      details: `Spécialité : ${result.doctor.specialty}`,
+    });
+
     return ok(result, 201);
   } catch (err) {
     if (err instanceof Error && err.message.includes('matricule')) {

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/auth';
 import { fail, forbidden, notFound, ok, unauthorized } from '@/lib/api';
+import { recordAudit } from '@/lib/audit';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -19,6 +20,16 @@ export async function POST(_request: Request, { params }: Params) {
     }
 
     await prisma.doctorRequest.update({ where: { id }, data: { status: 'REJECTED' } });
+
+    // No account exists for a rejected request, so the log keeps the details
+    // from the request itself.
+    await recordAudit({
+      actor: user,
+      action: 'REQUEST_REJECTED',
+      targetLabel: `${doctorRequest.name} (${doctorRequest.matricule})`,
+      details: `Demande du ${doctorRequest.createdAt.toISOString().split('T')[0]} · ${doctorRequest.specialty}`,
+    });
+
     return ok({ success: true as const });
   } catch (err) {
     console.error('[api/admin/doctor-requests/:id/reject]', err);
